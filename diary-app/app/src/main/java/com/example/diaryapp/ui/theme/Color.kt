@@ -2,22 +2,31 @@ package com.example.diaryapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Design Ref: §5.1 — 파스텔 피치/코랄/연핑크 계열 (SC-07)
-val PastelCoral      = Color(0xFFE8736B)  // Primary (Light)
-val PastelPeach      = Color(0xFFFFCBA4)  // PrimaryContainer
-val PastelPink       = Color(0xFFFFB3C1)  // Secondary
-val PastelRose       = Color(0xFFFFC5D0)  // SecondaryContainer
-val PastelLavender   = Color(0xFFE8D5F5)  // Tertiary
-val PastelSurface    = Color(0xFFFFF5F0)  // Surface
-val PastelBackground = Color(0xFFFFFAF8)  // Background
-val PastelOnPrimary  = Color(0xFFFFFFFF)  // OnPrimary
-val PastelBrown      = Color(0xFF5A2A1A)  // OnPrimaryContainer (어두운 브라운)
-val PastelError      = Color(0xFFE57373)  // Error
-val PastelOnSurface  = Color(0xFF3D2B26)  // OnSurface
+// Design Ref: §4.1 — SkyBlue 파스텔 팔레트 (FR-01)
+val SkyBlue          = Color(0xFF7EC8E3)  // Primary
+val SkyBlueLight     = Color(0xFFB3E5FC)  // PrimaryContainer
+val SkyMint          = Color(0xFFA8DADC)  // Secondary
+val SkyBluePale      = Color(0xFFE1F5FE)  // SecondaryContainer
+val SkyLavender      = Color(0xFFD4E6F1)  // Tertiary
 
-// Dark 모드용 (차분한 딥 코랄 계열)
-val DeepCoral        = Color(0xFFFFB3A7)  // Primary (Dark)
-val DeepPeach        = Color(0xFF8C3B30)  // PrimaryContainer (Dark)
-val DeepPink         = Color(0xFFFFB3C1)  // Secondary (Dark)
-val DarkSurface      = Color(0xFF2B1A18)  // Surface (Dark)
-val DarkBackground   = Color(0xFF231512)  // Background (Dark)
+// 배경색 — 달력과 앱 배경 구분 (FR-07)
+val SkyBackground    = Color(0xFFF0F8FF)  // 앱 배경 (AliceBlue)
+val SkySurface       = Color(0xFFFFFFFF)  // 일반 Surface
+val SkyCalendarBg    = Color(0xFFE8F4FD)  // 달력 카드 배경
+
+val SkyOnPrimary     = Color(0xFFFFFFFF)
+val SkyDeepBlue      = Color(0xFF1565C0)  // OnPrimaryContainer
+val SkyOnSurface     = Color(0xFF1A2A3A)  // 텍스트
+val SkyOnSurfaceVar  = Color(0xFF4A6072)
+val SkyError         = Color(0xFFE57373)
+
+// 달력 특수 날짜 색상 (FR-08)
+val DateSaturday     = Color(0xFF1565C0)  // 토요일
+val DateSunday       = Color(0xFFD32F2F)  // 일요일
+
+// Dark 모드
+val SkyDarkPrimary   = Color(0xFF81D4FA)
+val SkyDarkContainer = Color(0xFF01579B)
+val SkyDarkSurface   = Color(0xFF1A2535)
+val SkyDarkBackground = Color(0xFF121C28)
+val SkyDarkOnSurface = Color(0xFFD0E8F5)

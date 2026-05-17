@@ -76,7 +76,11 @@ fun NavGraph(
                     navController.navigate(Screen.DiaryEditor.createRoute(d, id))
                 },
                 onBack = { navController.popBackStack() },
-                onDeleted = { navController.popBackStack() }
+                onDeleted = { navController.popBackStack() },
+                // Design Ref: §5.3 — 빈 날 '일기 쓰기' 버튼 → DiaryEditor 이동 (FR-10)
+                onAddDiary = { d ->
+                    navController.navigate(Screen.DiaryEditor.createRoute(d))
+                }
             )
         }
 

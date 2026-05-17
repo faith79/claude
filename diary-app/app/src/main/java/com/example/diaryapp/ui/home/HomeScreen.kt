@@ -2,6 +2,7 @@ package com.example.diaryapp.ui.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -28,15 +29,19 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.data.model.DiaryEntry
+import com.example.diaryapp.ui.theme.DateSaturday
+import com.example.diaryapp.ui.theme.DateSunday
+import com.example.diaryapp.ui.theme.SkyCalendarBg
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryViewModel
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
-// Design Ref: §4.1 — HorizontalPager 스와이프 달력 (SC-06) + 화살표 버튼 병존
-// Plan SC: SC-04 — FAB Upsert 체크 포함
+// Design Ref: §5.1 — 달력 상단 고정 레이아웃 (FR-02), HorizontalPager 월 스와이프 유지
+// Plan SC: SC-04 — FAB Upsert, SC-06 — 월 스와이프
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -57,7 +62,6 @@ fun HomeScreen(
 
     val scope = rememberCoroutineScope()
 
-    // Page ↔ YearMonth mapping anchored at 2000-01
     val BASE_YEAR = 2000
     val TOTAL_PAGES = (2100 - BASE_YEAR) * 12
     val now = YearMonth.now()
@@ -68,7 +72,6 @@ fun HomeScreen(
     fun pageToYearMonth(page: Int): YearMonth =
         YearMonth.of(BASE_YEAR + page / 12, page % 12 + 1)
 
-    // Load month data whenever pager settles on a new page
     LaunchedEffect(pagerState.settledPage, userId) {
         if (userId.isNotEmpty()) {
             diaryViewModel.loadMonth(userId, pageToYearMonth(pagerState.settledPage))
@@ -110,7 +113,6 @@ fun HomeScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                // Plan SC: SC-04 — 오늘 일기 있으면 수정, 없으면 신규 작성
                 scope.launch {
                     val todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
                     val existing = diaryViewModel.getEntryByDate(userId, todayDate)
@@ -125,6 +127,7 @@ fun HomeScreen(
             }
         }
     ) { padding ->
+        // Design Ref: §5.1 — 달력 고정(상단) + 아래 영역 weight(1f) (FR-02)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -136,36 +139,46 @@ fun HomeScreen(
                     onItemClick = { onDateSelected(it.date) }
                 )
             } else {
-                // Plan SC: SC-06 — 스와이프로 월 이동
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    val pageMonth = pageToYearMonth(page)
-                    Column {
-                        CalendarHeader(
-                            currentMonth = pageMonth,
-                            onPrev = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                // 달력 카드 — 상단 고정 (weight 없음)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = SkyCalendarBg),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { page ->
+                        val pageMonth = pageToYearMonth(page)
+                        Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                            CalendarHeader(
+                                currentMonth = pageMonth,
+                                onPrev = {
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                    }
+                                },
+                                onNext = {
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    }
                                 }
-                            },
-                            onNext = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                            )
+                            CalendarGrid(
+                                yearMonth = pageMonth,
+                                diaryMap = diaryMap,
+                                onDateClick = { date ->
+                                    if (diaryMap.containsKey(date)) onDateSelected(date)
+                                    else onAddDiary(date)
                                 }
-                            }
-                        )
-                        CalendarGrid(
-                            yearMonth = pageMonth,
-                            diaryMap = diaryMap,
-                            onDateClick = { date ->
-                                if (diaryMap.containsKey(date)) onDateSelected(date)
-                                else onAddDiary(date)
-                            }
-                        )
+                            )
+                        }
                     }
                 }
+
+                // 달력 아래 여백 영역 (필요 시 추가 콘텐츠 배치 가능)
+                Box(modifier = Modifier.weight(1f))
             }
         }
     }
@@ -263,14 +276,20 @@ private fun CalendarGrid(
     }
 
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+        // Design Ref: §5.2 — 요일 헤더 (FR-08: 토=파랑, 일=빨강)
         Row(modifier = Modifier.fillMaxWidth()) {
-            dayLabels.forEach { label ->
+            dayLabels.forEachIndexed { index, label ->
+                val labelColor = when (index) {
+                    0 -> DateSunday
+                    6 -> DateSaturday
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
                 Text(
                     label,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = labelColor
                 )
             }
         }
@@ -283,15 +302,17 @@ private fun CalendarGrid(
         ) {
             items(cells) { day ->
                 if (day == null) {
-                    Box(Modifier.aspectRatio(1f))
+                    Box(Modifier.height(60.dp))
                 } else {
                     val date = yearMonth.atDay(day).format(DateTimeFormatter.ISO_LOCAL_DATE)
                     val entry = diaryMap[date]
                     val isToday = yearMonth.atDay(day) == today
+                    val dayOfWeek = yearMonth.atDay(day).dayOfWeek
                     DayCell(
                         day = day,
                         entry = entry,
                         isToday = isToday,
+                        dayOfWeek = dayOfWeek,
                         onClick = { onDateClick(date) }
                     )
                 }
@@ -300,11 +321,13 @@ private fun CalendarGrid(
     }
 }
 
+// Design Ref: §5.2 — 이모지(위,24sp) + 날짜(아래,13sp) + 빈 동그라미 + 토/일 색상 (FR-04,05,06,08)
 @Composable
 private fun DayCell(
     day: Int,
     entry: DiaryEntry?,
     isToday: Boolean,
+    dayOfWeek: DayOfWeek,
     onClick: () -> Unit
 ) {
     val emotion = entry?.emotion
@@ -313,9 +336,17 @@ private fun DayCell(
         else -> Color.Transparent
     }
 
+    // Plan SC: FR-08 — 토요일 파랑, 일요일 빨강
+    val dateColor = when {
+        isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+        dayOfWeek == DayOfWeek.SATURDAY -> DateSaturday
+        dayOfWeek == DayOfWeek.SUNDAY -> DateSunday
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
     Column(
         modifier = Modifier
-            .aspectRatio(1f)
+            .height(60.dp)
             .padding(2.dp)
             .clip(CircleShape)
             .background(bgColor)
@@ -323,21 +354,27 @@ private fun DayCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // 위: 감정 이모지 or 빈 동그라미 (FR-04, FR-05, FR-06)
+        if (emotion != null) {
+            Text(emotion.emoji, fontSize = 24.sp)
+        } else {
+            // Plan SC: FR-06 — 일기 없는 날 빈 동그라미 (이모지 크기와 동일한 28dp)
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .border(
+                        width = 1.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = CircleShape
+                    )
+            )
+        }
+        Spacer(Modifier.height(2.dp))
+        // 아래: 날짜 (FR-05)
         Text(
             text = day.toString(),
             fontSize = 13.sp,
-            color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer
-            else MaterialTheme.colorScheme.onSurface
+            color = dateColor
         )
-        if (emotion != null) {
-            Text(emotion.emoji, fontSize = 12.sp)
-        } else if (entry != null) {
-            Box(
-                Modifier
-                    .size(4.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
-        }
     }
 }

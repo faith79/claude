@@ -1,8 +1,11 @@
 package com.example.diaryapp.ui.diary
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -16,35 +19,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
+import com.example.diaryapp.data.model.DiaryEntry
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryUiState
 import com.example.diaryapp.viewmodel.DiaryViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
-// Design Ref: §4.7 — 이미지 좌우 여백, 내용 Card 박스, 날씨 태그 표시 (SC-08)
-@OptIn(ExperimentalMaterial3Api::class)
+// Design Ref: §5.3 — HorizontalPager 날짜 스와이프 ±365일 (FR-09,FR-10)
+// Design Ref: §5.5 — Coil EXIF 회전 보정 Size.ORIGINAL (FR-11)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DiaryDetailScreen(
     date: String,
     onEdit: (String, String) -> Unit,
     onBack: () -> Unit,
     onDeleted: () -> Unit,
+    onAddDiary: (String) -> Unit = {},
     diaryViewModel: DiaryViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val userId = authViewModel.currentUserId
-    val entry by diaryViewModel.selectedEntry.collectAsStateWithLifecycle()
     val uiState by diaryViewModel.uiState.collectAsStateWithLifecycle()
-
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    val isDetailLoading by diaryViewModel.isDetailLoading.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(date, userId) {
-        diaryViewModel.loadDiaryByDate(userId, date)
-    }
 
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -60,8 +65,69 @@ fun DiaryDetailScreen(
         }
     }
 
+    // Plan SC: FR-09 — HorizontalPager ±365일 (총 731페이지), 초기 페이지 = 365(중앙)
+    val baseDate = remember(date) { LocalDate.parse(date) }
+    val TOTAL_PAGES = 731
+    val INITIAL_PAGE = 365
+    val pagerState = rememberPagerState(initialPage = INITIAL_PAGE) { TOTAL_PAGES }
+
+    fun pageToDate(page: Int): LocalDate = baseDate.plusDays((page - INITIAL_PAGE).toLong())
+
+    // 현재 보이는 페이지의 날짜에 맞는 일기 로드
+    LaunchedEffect(pagerState.settledPage, userId) {
+        val targetDate = pageToDate(pagerState.settledPage).format(DateTimeFormatter.ISO_LOCAL_DATE)
+        diaryViewModel.loadDiaryByDate(userId, targetDate)
+    }
+
+    val entry by diaryViewModel.selectedEntry.collectAsStateWithLifecycle()
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) { page ->
+            val targetDate = pageToDate(page)
+            val targetDateStr = targetDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+            val isCurrentPage = page == pagerState.settledPage
+            // settled 페이지의 entry만 유효 — 다른 페이지는 null 처리
+            val pageEntry = if (isCurrentPage) entry else null
+
+            DiaryPageContent(
+                date = targetDateStr,
+                entry = pageEntry,
+                isCurrentPage = isCurrentPage,
+                // G-01 fix: 로딩 중에는 EmptyDiaryPage 대신 CircularProgressIndicator 표시
+                isDetailLoading = isCurrentPage && isDetailLoading,
+                onEdit = onEdit,
+                onBack = onBack,
+                onDelete = { e -> diaryViewModel.deleteDiary(e) },
+                onAddDiary = onAddDiary
+            )
+        }
+    }
+}
+
+// Design Ref: §5.3 — 일기 있는 날: 기존 상세 UI / 없는 날: EmptyDiaryPage (FR-09, FR-10)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DiaryPageContent(
+    date: String,
+    entry: DiaryEntry?,
+    isCurrentPage: Boolean,
+    isDetailLoading: Boolean = false,
+    onEdit: (String, String) -> Unit,
+    onBack: () -> Unit,
+    onDelete: (DiaryEntry) -> Unit,
+    onAddDiary: (String) -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(date) },
@@ -83,7 +149,8 @@ fun DiaryDetailScreen(
             )
         }
     ) { padding ->
-        if (entry == null) {
+        if (!isCurrentPage || isDetailLoading) {
+            // G-01 fix: 스와이프 중이거나 로딩 중인 페이지는 인디케이터 표시 (EmptyDiaryPage 오표시 방지)
             Box(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
@@ -91,83 +158,22 @@ fun DiaryDetailScreen(
             return@Scaffold
         }
 
-        val e = entry!!
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Plan SC: SC-08 — 이미지 좌우 여백 16dp
-            if (e.imageUrls.isNotEmpty()) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp)
-                ) {
-                    items(e.imageUrls) { url ->
-                        AsyncImage(
-                            model = url,
-                            contentDescription = "일기 이미지",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .height(220.dp)
-                                .width(if (e.imageUrls.size == 1) 340.dp else 260.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                        )
-                    }
-                }
-            }
-
-            // Plan SC: SC-08 — 감정/날씨 칩 행
-            if (e.emotion != null || e.weather != null) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    e.emotion?.let { emotion ->
-                        AssistChip(
-                            onClick = {},
-                            label = { Text("${emotion.emoji} ${emotion.label}") }
-                        )
-                    }
-                    e.weather?.let { weather ->
-                        AssistChip(
-                            onClick = {},
-                            label = { Text("${weather.emoji} ${weather.label}") }
-                        )
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-            }
-
-            // Plan SC: SC-08 — 내용 Card 박스
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Text(
-                    text = e.content,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(20.dp)
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
+        if (entry == null) {
+            // Plan SC: FR-10 — 일기 없는 날 빈 화면 + 작성 버튼 (로딩 완료 후에만 표시)
+            EmptyDiaryPage(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                onAddDiary = { onAddDiary(date) }
+            )
+        } else {
+            // 기존 일기 상세 UI
+            DiaryEntryContent(
+                entry = entry,
+                modifier = Modifier.fillMaxSize().padding(padding)
+            )
         }
     }
 
-    if (showDeleteDialog) {
+    if (showDeleteDialog && entry != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("일기 삭제") },
@@ -176,7 +182,7 @@ fun DiaryDetailScreen(
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        entry?.let { diaryViewModel.deleteDiary(it) }
+                        onDelete(entry)
                     }
                 ) { Text("삭제", color = MaterialTheme.colorScheme.error) }
             },
@@ -184,5 +190,111 @@ fun DiaryDetailScreen(
                 TextButton(onClick = { showDeleteDialog = false }) { Text("취소") }
             }
         )
+    }
+}
+
+// Plan SC: FR-10 — 일기 없는 날 빈 화면
+@Composable
+private fun EmptyDiaryPage(
+    modifier: Modifier = Modifier,
+    onAddDiary: () -> Unit
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "아직 일기가 없어요",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(onClick = onAddDiary) {
+                Text("일기 쓰기")
+            }
+        }
+    }
+}
+
+// 기존 일기 상세 콘텐츠
+@Composable
+private fun DiaryEntryContent(
+    entry: DiaryEntry,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState())
+    ) {
+        // Design Ref: §5.5 — Coil EXIF 회전 보정 (FR-11): Size.ORIGINAL로 원본 해상도 EXIF 처리
+        if (entry.imageUrls.isNotEmpty()) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
+            ) {
+                items(entry.imageUrls) { url ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(url)
+                            .crossfade(true)
+                            .size(Size.ORIGINAL)
+                            .build(),
+                        contentDescription = "일기 이미지",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .height(220.dp)
+                            .width(if (entry.imageUrls.size == 1) 340.dp else 260.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                }
+            }
+        }
+
+        if (entry.emotion != null || entry.weather != null) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                entry.emotion?.let { emotion ->
+                    AssistChip(
+                        onClick = {},
+                        label = { Text("${emotion.emoji} ${emotion.label}") }
+                    )
+                }
+                entry.weather?.let { weather ->
+                    AssistChip(
+                        onClick = {},
+                        label = { Text("${weather.emoji} ${weather.label}") }
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Text(
+                text = entry.content,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(20.dp)
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
     }
 }

@@ -639,8 +639,8 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
     }
 
     @Override
-    public void injectDiaryApp(DiaryApp arg0) {
-      injectDiaryApp2(arg0);
+    public void injectDiaryApp(DiaryApp diaryApp) {
+      injectDiaryApp2(diaryApp);
     }
 
     @Override

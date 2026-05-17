@@ -21,8 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 
 // Design Ref: §4.5 — 썸네일 row + X버튼 / 최대 3장 미만일 때만 + 버튼 표시 (SC-05, FR-08~FR-11)
 @Composable
@@ -56,11 +59,17 @@ fun MultiImagePicker(
         Spacer(Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(imageUrls) { url ->
+                // Design Ref: §5.5 — EXIF 회전 보정 (FR-11)
+                val context = LocalContext.current
                 ImageThumbnail(
                     onRemove = { onRemoveExisting(url) }
                 ) {
                     AsyncImage(
-                        model = url,
+                        model = ImageRequest.Builder(context)
+                            .data(url)
+                            .crossfade(true)
+                            .size(Size.ORIGINAL)
+                            .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -68,11 +77,17 @@ fun MultiImagePicker(
                 }
             }
             items(newImageUris) { uri ->
+                // Design Ref: §5.5 — 로컬 Uri도 EXIF 회전 보정 (FR-11)
+                val context = LocalContext.current
                 ImageThumbnail(
                     onRemove = { onRemoveNew(uri) }
                 ) {
                     AsyncImage(
-                        model = uri,
+                        model = ImageRequest.Builder(context)
+                            .data(uri)
+                            .crossfade(true)
+                            .size(Size.ORIGINAL)
+                            .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()

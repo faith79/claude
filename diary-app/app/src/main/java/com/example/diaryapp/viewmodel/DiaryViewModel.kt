@@ -36,6 +36,10 @@ class DiaryViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    // Design Ref: joyary-upgrade §5.3 — 상세보기 일기 로딩 상태 (G-01 fix)
+    private val _isDetailLoading = MutableStateFlow(false)
+    val isDetailLoading: StateFlow<Boolean> = _isDetailLoading.asStateFlow()
+
     private val _diaries = MutableStateFlow<List<DiaryEntry>>(emptyList())
     val diaries: StateFlow<List<DiaryEntry>> = _diaries.asStateFlow()
 
@@ -67,7 +71,9 @@ class DiaryViewModel @Inject constructor(
 
     fun loadDiaryByDate(userId: String, date: String) {
         viewModelScope.launch {
+            _isDetailLoading.value = true
             _selectedEntry.value = diaryRepository.getDiaryByDate(userId, date)
+            _isDetailLoading.value = false
         }
     }
 
