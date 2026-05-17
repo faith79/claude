@@ -24,6 +24,7 @@ import com.example.diaryapp.data.model.WeatherTag
 import com.example.diaryapp.ui.components.LoadingOverlay
 import com.example.diaryapp.ui.components.MultiImagePicker
 import com.example.diaryapp.ui.components.WeatherSelector
+import com.example.diaryapp.ui.theme.LocalThemeColors
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryUiState
 import com.example.diaryapp.viewmodel.DiaryViewModel
@@ -75,8 +76,11 @@ fun DiaryEditorScreen(
         }
     }
 
+    // Design Ref: joyary-upgrade-v3 §5.4 — LocalThemeColors.appBg 적용 (FR-04)
+    val appBg = LocalThemeColors.current.appBg
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
+            containerColor = appBg,
             topBar = {
                 TopAppBar(
                     title = { Text(if (existingId.isEmpty()) "새 일기" else "일기 수정") },

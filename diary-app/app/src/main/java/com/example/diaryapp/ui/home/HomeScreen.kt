@@ -31,7 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.data.model.DiaryEntry
 import com.example.diaryapp.ui.theme.DateSaturday
 import com.example.diaryapp.ui.theme.DateSunday
-import com.example.diaryapp.ui.theme.SkyCalendarBg
+import com.example.diaryapp.ui.theme.LocalThemeColors
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryViewModel
 import java.time.DayOfWeek
@@ -140,9 +140,11 @@ fun HomeScreen(
                 )
             } else {
                 // 달력 카드 — 상단 고정 (weight 없음)
+                // Design Ref: joyary-upgrade-v3 §5.3 — LocalThemeColors.calendarBg 적용 (FR-01,FR-03)
+                val themeColors = LocalThemeColors.current
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = SkyCalendarBg),
+                    colors = CardDefaults.cardColors(containerColor = themeColors.calendarBg),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     shape = MaterialTheme.shapes.medium
                 ) {
@@ -331,8 +333,10 @@ private fun DayCell(
     onClick: () -> Unit
 ) {
     val emotion = entry?.emotion
+    // Design Ref: joyary-upgrade-v3 §5.3 — LocalThemeColors.todayBg 적용 (FR-05)
+    val themeColors = LocalThemeColors.current
     val bgColor = when {
-        isToday -> MaterialTheme.colorScheme.primaryContainer
+        isToday -> themeColors.todayBg
         else -> Color.Transparent
     }
 

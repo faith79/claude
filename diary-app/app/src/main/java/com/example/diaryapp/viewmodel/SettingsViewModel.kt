@@ -1,11 +1,15 @@
 package com.example.diaryapp.viewmodel
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.diaryapp.notification.DailyReminderWorker
 import com.example.diaryapp.notification.NotificationPreferences
+import com.example.diaryapp.notification.ThemePreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val notificationPreferences: NotificationPreferences,
+    private val themePreferences: ThemePreferences,
     private val workManager: WorkManager
 ) : ViewModel() {
 
@@ -27,6 +32,16 @@ class SettingsViewModel @Inject constructor(
 
     private val _reminderMinute = MutableStateFlow(notificationPreferences.reminderMinute)
     val reminderMinute: StateFlow<Int> = _reminderMinute.asStateFlow()
+
+    // Design Ref: joyary-upgrade-v3 §4.1 — 테마 색상 StateFlow (FR-06, FR-07)
+    private val _calendarBgColor = MutableStateFlow(Color(themePreferences.calendarBgColor))
+    val calendarBgColor: StateFlow<Color> = _calendarBgColor.asStateFlow()
+
+    private val _appBgColor = MutableStateFlow(Color(themePreferences.appBgColor))
+    val appBgColor: StateFlow<Color> = _appBgColor.asStateFlow()
+
+    private val _todayBgColor = MutableStateFlow(Color(themePreferences.todayBgColor))
+    val todayBgColor: StateFlow<Color> = _todayBgColor.asStateFlow()
 
     fun setReminderEnabled(enabled: Boolean) {
         notificationPreferences.isEnabled = enabled
@@ -40,6 +55,29 @@ class SettingsViewModel @Inject constructor(
         _reminderHour.value = hour
         _reminderMinute.value = minute
         if (_reminderEnabled.value) scheduleReminder()
+    }
+
+    // Plan SC: SC-03 — 색상 변경 즉시 StateFlow 반영
+    fun setCalendarBgColor(color: Color) {
+        themePreferences.calendarBgColor = color.toArgb()
+        _calendarBgColor.value = color
+    }
+
+    fun setAppBgColor(color: Color) {
+        themePreferences.appBgColor = color.toArgb()
+        _appBgColor.value = color
+    }
+
+    fun setTodayBgColor(color: Color) {
+        themePreferences.todayBgColor = color.toArgb()
+        _todayBgColor.value = color
+    }
+
+    fun resetThemeColors() {
+        themePreferences.resetToDefaults()
+        _calendarBgColor.value = Color(themePreferences.calendarBgColor)
+        _appBgColor.value = Color(themePreferences.appBgColor)
+        _todayBgColor.value = Color(themePreferences.todayBgColor)
     }
 
     private fun scheduleReminder() {

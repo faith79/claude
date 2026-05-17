@@ -1,15 +1,26 @@
 package com.example.diaryapp.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.diaryapp.ui.theme.AppBgPalette
+import com.example.diaryapp.ui.theme.CalendarBgPalette
+import com.example.diaryapp.ui.theme.TodayBgPalette
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
 
@@ -25,6 +36,11 @@ fun SettingsScreen(
     val reminderHour by settingsViewModel.reminderHour.collectAsStateWithLifecycle()
     val reminderMinute by settingsViewModel.reminderMinute.collectAsStateWithLifecycle()
     var showTimePicker by remember { mutableStateOf(false) }
+
+    // Design Ref: joyary-upgrade-v3 §5.2 — 테마 색상 StateFlow collect (FR-03,04,05)
+    val calendarBgColor by settingsViewModel.calendarBgColor.collectAsStateWithLifecycle()
+    val appBgColor by settingsViewModel.appBgColor.collectAsStateWithLifecycle()
+    val todayBgColor by settingsViewModel.todayBgColor.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -44,6 +60,7 @@ fun SettingsScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            // 알림 섹션
             Text(
                 "알림",
                 style = MaterialTheme.typography.titleMedium,
@@ -94,6 +111,55 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(24.dp))
+
+            // 테마 섹션
+            // Design Ref: joyary-upgrade-v3 §5.2 — 색상 팔레트 UI (FR-02,FR-03,FR-04,FR-05,FR-08)
+            Text(
+                "테마",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(8.dp))
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    ColorPaletteRow(
+                        label = "달력 배경색",
+                        palette = CalendarBgPalette,
+                        selectedColor = calendarBgColor,
+                        onColorSelected = settingsViewModel::setCalendarBgColor
+                    )
+                    HorizontalDivider()
+                    ColorPaletteRow(
+                        label = "앱 배경색",
+                        palette = AppBgPalette,
+                        selectedColor = appBgColor,
+                        onColorSelected = settingsViewModel::setAppBgColor
+                    )
+                    HorizontalDivider()
+                    ColorPaletteRow(
+                        label = "오늘 날짜 배경색",
+                        palette = TodayBgPalette,
+                        selectedColor = todayBgColor,
+                        onColorSelected = settingsViewModel::setTodayBgColor
+                    )
+                    HorizontalDivider()
+                    // Plan SC: SC-05 — 기본값으로 초기화 (FR-08)
+                    TextButton(
+                        onClick = settingsViewModel::resetThemeColors,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("기본값으로 초기화")
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // 계정 섹션
             Text(
                 "계정",
                 style = MaterialTheme.typography.titleMedium,
@@ -127,6 +193,38 @@ fun SettingsScreen(
             },
             onDismiss = { showTimePicker = false }
         )
+    }
+}
+
+// Design Ref: joyary-upgrade-v3 §5.2 — 색상 원형 팔레트 선택 컴포넌트 (FR-03~FR-05)
+@Composable
+private fun ColorPaletteRow(
+    label: String,
+    palette: List<Color>,
+    selectedColor: Color,
+    onColorSelected: (Color) -> Unit
+) {
+    Column {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(palette) { color ->
+                val isSelected = color == selectedColor
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .border(
+                            width = if (isSelected) 3.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        )
+                        .clickable { onColorSelected(color) }
+                )
+            }
+        }
     }
 }
 

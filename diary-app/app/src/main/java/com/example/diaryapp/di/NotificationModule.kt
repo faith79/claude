@@ -3,6 +3,7 @@ package com.example.diaryapp.di
 import android.content.Context
 import androidx.work.WorkManager
 import com.example.diaryapp.notification.NotificationPreferences
+import com.example.diaryapp.notification.ThemePreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,4 +26,11 @@ object NotificationModule {
     fun provideWorkManager(
         @ApplicationContext context: Context
     ): WorkManager = WorkManager.getInstance(context)
+
+    // Design Ref: joyary-upgrade-v3 §7 — ThemePreferences DI (FR-07)
+    @Provides
+    @Singleton
+    fun provideThemePreferences(
+        @ApplicationContext context: Context
+    ): ThemePreferences = ThemePreferences(context)
 }

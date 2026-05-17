@@ -25,10 +25,12 @@ import com.example.diaryapp.di.DataSourceModule_ProvideFirebaseAuthFactory;
 import com.example.diaryapp.di.DataSourceModule_ProvideFirebaseStorageFactory;
 import com.example.diaryapp.di.DataSourceModule_ProvideFirestoreFactory;
 import com.example.diaryapp.di.NotificationModule_ProvideNotificationPreferencesFactory;
+import com.example.diaryapp.di.NotificationModule_ProvideThemePreferencesFactory;
 import com.example.diaryapp.di.NotificationModule_ProvideWorkManagerFactory;
 import com.example.diaryapp.notification.DailyReminderWorker;
 import com.example.diaryapp.notification.DailyReminderWorker_AssistedFactory;
 import com.example.diaryapp.notification.NotificationPreferences;
+import com.example.diaryapp.notification.ThemePreferences;
 import com.example.diaryapp.viewmodel.AuthViewModel;
 import com.example.diaryapp.viewmodel.AuthViewModel_HiltModules;
 import com.example.diaryapp.viewmodel.AuthViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
@@ -492,7 +494,7 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
           return (T) new DiaryViewModel(singletonCImpl.bindDiaryRepositoryProvider.get(), singletonCImpl.imageCompressorProvider.get());
 
           case 2: // com.example.diaryapp.viewmodel.SettingsViewModel
-          return (T) new SettingsViewModel(singletonCImpl.provideNotificationPreferencesProvider.get(), singletonCImpl.provideWorkManagerProvider.get());
+          return (T) new SettingsViewModel(singletonCImpl.provideNotificationPreferencesProvider.get(), singletonCImpl.provideThemePreferencesProvider.get(), singletonCImpl.provideWorkManagerProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -594,6 +596,8 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
 
     Provider<NotificationPreferences> provideNotificationPreferencesProvider;
 
+    Provider<ThemePreferences> provideThemePreferencesProvider;
+
     Provider<WorkManager> provideWorkManagerProvider;
 
     SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
@@ -635,7 +639,8 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
       this.bindDiaryRepositoryProvider = DoubleCheck.provider((Provider) (diaryRepositoryImplProvider));
       this.imageCompressorProvider = DoubleCheck.provider(new SwitchingProvider<ImageCompressor>(singletonCImpl, 6));
       this.provideNotificationPreferencesProvider = DoubleCheck.provider(new SwitchingProvider<NotificationPreferences>(singletonCImpl, 7));
-      this.provideWorkManagerProvider = DoubleCheck.provider(new SwitchingProvider<WorkManager>(singletonCImpl, 8));
+      this.provideThemePreferencesProvider = DoubleCheck.provider(new SwitchingProvider<ThemePreferences>(singletonCImpl, 8));
+      this.provideWorkManagerProvider = DoubleCheck.provider(new SwitchingProvider<WorkManager>(singletonCImpl, 9));
     }
 
     @Override
@@ -707,7 +712,10 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
           case 7: // com.example.diaryapp.notification.NotificationPreferences
           return (T) NotificationModule_ProvideNotificationPreferencesFactory.provideNotificationPreferences(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 8: // androidx.work.WorkManager
+          case 8: // com.example.diaryapp.notification.ThemePreferences
+          return (T) NotificationModule_ProvideThemePreferencesFactory.provideThemePreferences(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 9: // androidx.work.WorkManager
           return (T) NotificationModule_ProvideWorkManagerFactory.provideWorkManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           default: throw new AssertionError(id);
