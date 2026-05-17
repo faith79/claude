@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "skills": {
+    "anthropic-streaming-patterns": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/anthropic-streaming-patterns/SKILL.md",
+      "computedHash": "adf23c2724ac2eab1805fcbdb209b19408b7d7667232590e6a64e6bd45a6ab28"
+    },
+    "claude-mobile-cost-tracking": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/claude-mobile-cost-tracking/SKILL.md",
+      "computedHash": "c46eb1b136b4d2970fece339d509a4e0cd15714a737d8df96052f34bfc13a048"
+    },
+    "claude-mobile-ios-testing": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/claude-mobile-ios-testing/SKILL.md",
+      "computedHash": "fb517c647baf82341357473f12df95d8f9f36c7b99336a5076bcf89b6750b963"
+    },
+    "claude-mobile-metro-manager": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/claude-mobile-metro-manager/SKILL.md",
+      "computedHash": "e2b553c652efa5de7ef536c6e6121d23c310f5e20853d739a25a6adf38d8856a"
+    },
+    "claude-mobile-validation-gate": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/claude-mobile-validation-gate/SKILL.md",
+      "computedHash": "9ab420a4449fcda942c5e15de20707c895f4ec350c3863c13b07aeb8329562e3"
+    },
+    "idb-claude-mobile-testing": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/idb-claude-mobile-testing/SKILL.md",
+      "computedHash": "a1f341658ba0ab5cbfaa9b9790f9ca36f9707d39bb55e4380643390324092769"
+    },
+    "mobile-android-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/ui-design/skills/mobile-android-design/SKILL.md",
+      "computedHash": "f664cf000475eb1fb2e61dfdbdfd311cca595154ddc63e76ac6444a07b86346a"
+    },
+    "react-native-expo-development": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/react-native-expo-development/SKILL.md",
+      "computedHash": "7bd287e33786678d96bdf5bb3dfb78e6c16f88b425d764ccf312e806726e7af1"
+    },
+    "websocket-integration-testing": {
+      "source": "krzemienski/claude-mobile-expo",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/websocket-integration-testing/SKILL.md",
+      "computedHash": "4bce694e7f72fad57412bffcc20838d148d27cfcc95bb4783d2af56b14b89e1f"
+    }
+  }
+}

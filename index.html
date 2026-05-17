@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>todos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <h1>todos</h1>
+
+    <div class="input-row">
+      <input
+        type="text"
+        id="todo-input"
+        placeholder="할 일을 입력하세요..."
+        autocomplete="off"
+      >
+      <button id="add-btn">Add</button>
+    </div>
+
+    <ul id="todo-list"></ul>
+
+    <footer id="footer">
+      <span id="items-left"></span>
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="active">Active</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+      </div>
+      <button id="clear-btn">Clear completed</button>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

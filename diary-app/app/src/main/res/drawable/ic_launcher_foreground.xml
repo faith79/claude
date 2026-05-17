@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 일기장 책 모양 아이콘 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,20 L78,20 Q82,20 82,24 L82,84 Q82,88 78,88 L30,88 Q26,88 26,84 L26,24 Q26,20 30,20 Z" />
+    <path
+        android:fillColor="#E8D5FF"
+        android:pathData="M34,20 L38,20 L38,88 L34,88 Q30,88 30,84 L30,24 Q30,20 34,20 Z" />
+    <!-- 줄 -->
+    <path
+        android:fillColor="#9C6ADE"
+        android:strokeColor="#9C6ADE"
+        android:strokeWidth="2"
+        android:pathData="M44,38 L74,38" />
+    <path
+        android:fillColor="#9C6ADE"
+        android:strokeColor="#9C6ADE"
+        android:strokeWidth="2"
+        android:pathData="M44,50 L74,50" />
+    <path
+        android:fillColor="#9C6ADE"
+        android:strokeColor="#9C6ADE"
+        android:strokeWidth="2"
+        android:pathData="M44,62 L74,62" />
+    <!-- 하트 -->
+    <path
+        android:fillColor="#FF6B9D"
+        android:pathData="M54,72 C54,72 46,66 46,61 C46,57.5 48.5,55 52,56 C53,56.4 54,57.5 54,57.5 C54,57.5 55,56.4 56,56 C59.5,55 62,57.5 62,61 C62,66 54,72 54,72 Z" />
+</vector>
