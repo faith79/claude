@@ -26,13 +26,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex로 colorScheme + themeColors 동적 주입 (FR-03,FR-04)
+            // Design Ref: joyary-upgrade-v5 §2.1 — diaryBg, weekdayColor override via copy() (KD-02)
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val templateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
             val template = AppThemeTemplates.getOrElse(templateIndex) { AppThemeTemplates[0] }
+            val diaryBg by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
+            val weekday by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
 
             DiaryAppTheme(colorScheme = template.colorScheme) {
                 CompositionLocalProvider(
-                    LocalThemeColors provides template.themeColors
+                    LocalThemeColors provides template.themeColors.copy(
+                        diaryBg = diaryBg,
+                        weekdayColor = weekday
+                    )
                 ) {
                     val navController = rememberNavController()
                     val authViewModel: AuthViewModel = hiltViewModel()

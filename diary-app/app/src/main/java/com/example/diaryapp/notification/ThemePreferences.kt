@@ -35,4 +35,19 @@ class ThemePreferences(context: Context) {
         set(value) { prefs.edit().putInt("selected_theme_index", value).apply() }
 
     fun resetToDefault() { selectedTemplateIndex = 0 }
+
+    // Design Ref: joyary-upgrade-v5 §3.3 — 일기 배경색 저장 (FR-05, FR-07)
+    var diaryBgColor: Int
+        get() = prefs.getInt("diary_bg_color", 0xFFFFF8F0.toInt())
+        set(value) { prefs.edit().putInt("diary_bg_color", value).apply() }
+
+    // Design Ref: joyary-upgrade-v5 §3.3 — 평일 글씨색 저장 (FR-06, FR-07)
+    var weekdayColor: Int
+        get() = prefs.getInt("weekday_color", 0xFF424242.toInt())
+        set(value) { prefs.edit().putInt("weekday_color", value).apply() }
+
+    fun resetDiaryColors() {
+        diaryBgColor = 0xFFFFF8F0.toInt()
+        weekdayColor = 0xFF424242.toInt()
+    }
 }

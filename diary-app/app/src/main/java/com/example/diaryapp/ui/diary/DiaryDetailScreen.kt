@@ -27,6 +27,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import com.example.diaryapp.data.model.DiaryEntry
+import com.example.diaryapp.ui.theme.LocalThemeColors
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryUiState
 import com.example.diaryapp.viewmodel.DiaryViewModel
@@ -81,7 +82,10 @@ fun DiaryDetailScreen(
 
     val entry by diaryViewModel.selectedEntry.collectAsStateWithLifecycle()
 
+    // Design Ref: joyary-upgrade-v5 §5.1 — containerColor = diaryBg (FR-03)
+    val diaryBg = LocalThemeColors.current.diaryBg
     Scaffold(
+        containerColor = diaryBg,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         HorizontalPager(

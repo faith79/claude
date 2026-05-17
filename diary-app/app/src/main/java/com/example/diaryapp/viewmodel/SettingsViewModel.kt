@@ -94,6 +94,30 @@ class SettingsViewModel @Inject constructor(
         _selectedTemplateIndex.value = 0
     }
 
+    // Design Ref: joyary-upgrade-v5 §3.1 — 일기 배경색 StateFlow (FR-05, FR-07)
+    private val _diaryBgColor = MutableStateFlow(Color(themePreferences.diaryBgColor))
+    val diaryBgColor: StateFlow<Color> = _diaryBgColor.asStateFlow()
+
+    fun setDiaryBgColor(color: Color) {
+        themePreferences.diaryBgColor = color.toArgb()
+        _diaryBgColor.value = color
+    }
+
+    // Design Ref: joyary-upgrade-v5 §3.1 — 평일 글씨색 StateFlow (FR-06, FR-07)
+    private val _weekdayColor = MutableStateFlow(Color(themePreferences.weekdayColor))
+    val weekdayColor: StateFlow<Color> = _weekdayColor.asStateFlow()
+
+    fun setWeekdayColor(color: Color) {
+        themePreferences.weekdayColor = color.toArgb()
+        _weekdayColor.value = color
+    }
+
+    fun resetDiaryColors() {
+        themePreferences.resetDiaryColors()
+        _diaryBgColor.value = Color(themePreferences.diaryBgColor)
+        _weekdayColor.value = Color(themePreferences.weekdayColor)
+    }
+
     private fun scheduleReminder() {
         val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(1, TimeUnit.DAYS)
             .build()

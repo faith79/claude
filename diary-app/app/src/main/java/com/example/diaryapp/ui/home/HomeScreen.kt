@@ -270,11 +270,15 @@ private fun CalendarGrid(
     val firstDay = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
     val startDayOfWeek = (firstDay.dayOfWeek.value % 7) // Sun=0
+    // Design Ref: joyary-upgrade-v5 §2.1 — weekdayColor LocalThemeColors에서 소비 (FR-06)
+    val themeWeekdayColor = LocalThemeColors.current.weekdayColor
 
     val dayLabels = listOf("일", "월", "화", "수", "목", "금", "토")
+    // Design Ref: joyary-upgrade-v5 §7.1 — 항상 42개(6×7) 패딩으로 달력 높이 고정 (FR-01, KD-03)
     val cells = buildList {
         repeat(startDayOfWeek) { add(null) }
         for (d in 1..daysInMonth) add(d)
+        while (size < 42) add(null)
     }
 
     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -315,6 +319,7 @@ private fun CalendarGrid(
                         entry = entry,
                         isToday = isToday,
                         dayOfWeek = dayOfWeek,
+                        weekdayColor = themeWeekdayColor,
                         onClick = { onDateClick(date) }
                     )
                 }
@@ -324,12 +329,14 @@ private fun CalendarGrid(
 }
 
 // Design Ref: §5.2 — 이모지(위,24sp) + 날짜(아래,13sp) + 빈 동그라미 + 토/일 색상 (FR-04,05,06,08)
+// Design Ref: joyary-upgrade-v5 §5.4 — weekdayColor 파라미터 추가 (FR-06)
 @Composable
 private fun DayCell(
     day: Int,
     entry: DiaryEntry?,
     isToday: Boolean,
     dayOfWeek: DayOfWeek,
+    weekdayColor: Color,
     onClick: () -> Unit
 ) {
     val emotion = entry?.emotion
@@ -340,12 +347,12 @@ private fun DayCell(
         else -> Color.Transparent
     }
 
-    // Plan SC: FR-08 — 토요일 파랑, 일요일 빨강
+    // Plan SC: FR-08 — 토요일 파랑, 일요일 빨강; Plan SC: SC-05 — 평일 weekdayColor 적용
     val dateColor = when {
         isToday -> MaterialTheme.colorScheme.onPrimaryContainer
         dayOfWeek == DayOfWeek.SATURDAY -> DateSaturday
         dayOfWeek == DayOfWeek.SUNDAY -> DateSunday
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> weekdayColor
     }
 
     Column(

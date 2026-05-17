@@ -53,3 +53,43 @@ val SkyDarkContainer = Color(0xFF01579B)
 val SkyDarkSurface   = Color(0xFF1A2535)
 val SkyDarkBackground = Color(0xFF121C28)
 val SkyDarkOnSurface = Color(0xFFD0E8F5)
+
+// Design Ref: joyary-upgrade-v5 §3.2 — 일기 배경색 팔레트 (FR-05, Option C: object 네임스페이스)
+object DiaryBgPalette {
+    val colors = listOf(
+        Color(0xFFFFFFFF),  // 0: 흰색
+        Color(0xFFFFF8F0),  // 1: 크림 (기본)
+        Color(0xFFFFFDE7),  // 2: 연노랑
+        Color(0xFFFFF0F5),  // 3: 연분홍
+        Color(0xFFF5F0FF),  // 4: 연보라
+        Color(0xFFF0FAF6),  // 5: 민트 크림
+        Color(0xFFF0F8FF),  // 6: 하늘 크림
+        Color(0xFFF2F8F0),  // 7: 세이지 크림
+        Color(0xFFFBF8F5),  // 8: 모카 크림
+        Color(0xFFFFF2F0),  // 9: 코랄 크림
+    )
+    val labels = listOf(
+        "흰색", "크림", "연노랑", "연분홍", "연보라",
+        "민트", "하늘", "세이지", "모카", "코랄"
+    )
+}
+
+// Design Ref: joyary-upgrade-v5 §3.2 — 평일 글씨색 팔레트 (FR-06, Option C: object 네임스페이스)
+object WeekdayColorPalette {
+    val colors = listOf(
+        Color(0xFF424242),  // 0: 진회색 (기본)
+        Color(0xFF37474F),  // 1: 차콜
+        Color(0xFF1A237E),  // 2: 네이비
+        Color(0xFF1B5E20),  // 3: 딥그린
+        Color(0xFF4A148C),  // 4: 딥퍼플
+        Color(0xFF0D47A1),  // 5: 로얄블루
+        Color(0xFF004D40),  // 6: 딥틸
+        Color(0xFF3E2723),  // 7: 딥브라운
+        Color(0xFFBF360C),  // 8: 딥오렌지
+        Color(0xFF546E7A),  // 9: 블루그레이
+    )
+    val labels = listOf(
+        "진회색", "차콜", "네이비", "딥그린", "딥퍼플",
+        "로얄블루", "딥틸", "딥브라운", "딥오렌지", "블루그레이"
+    )
+}

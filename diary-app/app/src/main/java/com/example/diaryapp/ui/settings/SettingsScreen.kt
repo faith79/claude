@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.ui.theme.AppThemeTemplates
+import com.example.diaryapp.ui.theme.DiaryBgPalette
+import com.example.diaryapp.ui.theme.WeekdayColorPalette
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
 
@@ -38,6 +40,9 @@ fun SettingsScreen(
 
     // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex collect (FR-02~FR-05)
     val selectedTemplateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
+    // Design Ref: joyary-upgrade-v5 §3.1 — 일기 배경색 + 평일 글씨색 collect (FR-05, FR-06)
+    val diaryBgColor by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
+    val weekdayColor by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -125,9 +130,30 @@ fun SettingsScreen(
                         onSelect = settingsViewModel::selectTemplate
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    // Plan SC: SC-06 — 기본값으로 초기화 (FR-08)
+                    // Design Ref: joyary-upgrade-v5 §5.4 — 일기 배경색 팔레트 행 (FR-05)
+                    ColorPaletteRow(
+                        label = "일기 배경색",
+                        colors = DiaryBgPalette.colors,
+                        labels = DiaryBgPalette.labels,
+                        selectedColor = diaryBgColor,
+                        onColorSelected = settingsViewModel::setDiaryBgColor
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    // Design Ref: joyary-upgrade-v5 §5.4 — 평일 글씨색 팔레트 행 (FR-06)
+                    ColorPaletteRow(
+                        label = "평일 글씨색",
+                        colors = WeekdayColorPalette.colors,
+                        labels = WeekdayColorPalette.labels,
+                        selectedColor = weekdayColor,
+                        onColorSelected = settingsViewModel::setWeekdayColor
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    // Plan SC: SC-07 — 기본값으로 초기화 (FR-08)
                     TextButton(
-                        onClick = settingsViewModel::resetThemeTemplate,
+                        onClick = {
+                            settingsViewModel.resetThemeTemplate()
+                            settingsViewModel.resetDiaryColors()
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Text("기본값으로 초기화")
@@ -171,6 +197,31 @@ fun SettingsScreen(
             },
             onDismiss = { showTimePicker = false }
         )
+    }
+}
+
+// Design Ref: joyary-upgrade-v5 §5.4 — 색상 팔레트 행 (FR-05, FR-06)
+@Composable
+private fun ColorPaletteRow(
+    label: String,
+    colors: List<Color>,
+    labels: List<String>,
+    selectedColor: Color,
+    onColorSelected: (Color) -> Unit
+) {
+    Column {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(colors.zip(labels)) { (color, colorLabel) ->
+                ThemeCircleCard(
+                    color = color,
+                    label = colorLabel,
+                    isSelected = color == selectedColor,
+                    onClick = { onColorSelected(color) }
+                )
+            }
+        }
     }
 }
 

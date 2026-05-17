@@ -76,11 +76,11 @@ fun DiaryEditorScreen(
         }
     }
 
-    // Design Ref: joyary-upgrade-v3 §5.4 — LocalThemeColors.appBg 적용 (FR-04)
-    val appBg = LocalThemeColors.current.appBg
+    // Design Ref: joyary-upgrade-v5 §5.1 — containerColor: appBg → diaryBg (FR-03, FR-04)
+    val diaryBg = LocalThemeColors.current.diaryBg
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = appBg,
+            containerColor = diaryBg,
             topBar = {
                 TopAppBar(
                     title = { Text(if (existingId.isEmpty()) "새 일기" else "일기 수정") },
