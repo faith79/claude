@@ -12,9 +12,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.diaryapp.navigation.NavGraph
 import com.example.diaryapp.navigation.Screen
+import com.example.diaryapp.ui.theme.AppThemeTemplates
 import com.example.diaryapp.ui.theme.DiaryAppTheme
 import com.example.diaryapp.ui.theme.LocalThemeColors
-import com.example.diaryapp.ui.theme.ThemeColors
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,15 +25,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // Design Ref: joyary-upgrade-v3 §5.1 — LocalThemeColors 최상위 provide (FR-06)
+            // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex로 colorScheme + themeColors 동적 주입 (FR-03,FR-04)
             val settingsViewModel: SettingsViewModel = hiltViewModel()
-            val calendarBg by settingsViewModel.calendarBgColor.collectAsStateWithLifecycle()
-            val appBg      by settingsViewModel.appBgColor.collectAsStateWithLifecycle()
-            val todayBg    by settingsViewModel.todayBgColor.collectAsStateWithLifecycle()
+            val templateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
+            val template = AppThemeTemplates.getOrElse(templateIndex) { AppThemeTemplates[0] }
 
-            DiaryAppTheme {
+            DiaryAppTheme(colorScheme = template.colorScheme) {
                 CompositionLocalProvider(
-                    LocalThemeColors provides ThemeColors(calendarBg, appBg, todayBg)
+                    LocalThemeColors provides template.themeColors
                 ) {
                     val navController = rememberNavController()
                     val authViewModel: AuthViewModel = hiltViewModel()

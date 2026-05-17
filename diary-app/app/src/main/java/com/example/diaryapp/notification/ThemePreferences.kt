@@ -28,4 +28,11 @@ class ThemePreferences(context: Context) {
             .putInt("today_bg_color", 0xFF7EC8E3.toInt())
             .apply()
     }
+
+    // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex 저장 (FR-05)
+    var selectedTemplateIndex: Int
+        get() = prefs.getInt("selected_theme_index", 0)
+        set(value) { prefs.edit().putInt("selected_theme_index", value).apply() }
+
+    fun resetToDefault() { selectedTemplateIndex = 0 }
 }

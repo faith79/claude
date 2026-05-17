@@ -80,6 +80,20 @@ class SettingsViewModel @Inject constructor(
         _todayBgColor.value = Color(themePreferences.todayBgColor)
     }
 
+    // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex StateFlow (FR-02~FR-05)
+    private val _selectedTemplateIndex = MutableStateFlow(themePreferences.selectedTemplateIndex)
+    val selectedTemplateIndex: StateFlow<Int> = _selectedTemplateIndex.asStateFlow()
+
+    fun selectTemplate(index: Int) {
+        themePreferences.selectedTemplateIndex = index
+        _selectedTemplateIndex.value = index
+    }
+
+    fun resetThemeTemplate() {
+        themePreferences.resetToDefault()
+        _selectedTemplateIndex.value = 0
+    }
+
     private fun scheduleReminder() {
         val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(1, TimeUnit.DAYS)
             .build()

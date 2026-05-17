@@ -1,6 +1,7 @@
 package com.example.diaryapp.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -42,15 +43,17 @@ private val SkyDarkColorScheme = darkColorScheme(
     error = SkyError
 )
 
+// Design Ref: joyary-upgrade-v4 §3.2 — colorScheme 파라미터화 (FR-03)
 @Composable
 fun DiaryAppTheme(
+    colorScheme: ColorScheme = SkyLightColorScheme,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) SkyDarkColorScheme else SkyLightColorScheme
+    val effectiveColorScheme = if (darkTheme) SkyDarkColorScheme else colorScheme
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = effectiveColorScheme,
         typography = Typography,
         content = content
     )

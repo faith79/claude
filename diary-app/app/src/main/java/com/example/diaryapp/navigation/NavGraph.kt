@@ -1,7 +1,9 @@
 package com.example.diaryapp.navigation
 
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -15,6 +17,7 @@ import com.example.diaryapp.ui.diary.DiaryEditorScreen
 import com.example.diaryapp.ui.home.HomeScreen
 import com.example.diaryapp.ui.settings.SettingsScreen
 import com.example.diaryapp.viewmodel.AuthViewModel
+import com.example.diaryapp.viewmodel.SettingsViewModel
 
 @Composable
 fun NavGraph(
@@ -102,13 +105,17 @@ fun NavGraph(
         }
 
         composable(Screen.Settings.route) {
+            // Activity 스코프 ViewModel을 명시적으로 주입 — MainActivity와 동일한 인스턴스 공유
+            val activity = LocalContext.current as ComponentActivity
+            val settingsViewModel: SettingsViewModel = hiltViewModel(activity)
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
-                }
+                },
+                settingsViewModel = settingsViewModel
             )
         }
     }

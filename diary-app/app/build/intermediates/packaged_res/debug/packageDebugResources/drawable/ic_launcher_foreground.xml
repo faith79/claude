@@ -4,31 +4,75 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 일기장 책 모양 아이콘 -->
+
+    <!-- Soft glow circle behind star -->
+    <path
+        android:fillColor="#40FFFFFF"
+        android:pathData="M 28,48 a 26,26 0 1,0 52,0 a 26,26 0 1,0 -52,0 Z" />
+
+    <!-- Main star body (5-pointed, center 54,48, outer R=22, inner r=9) -->
+    <path
+        android:fillColor="#FEFCE8"
+        android:pathData="M 54,26 L 59.3,40.7 L 74.9,41.2 L 62.6,50.8 L 66.9,65.8 L 54,57 L 41.1,65.8 L 45.4,50.8 L 33.1,41.2 L 48.7,40.7 Z" />
+
+    <!-- Star warm outline -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F0B429"
+        android:strokeWidth="1.2"
+        android:pathData="M 54,26 L 59.3,40.7 L 74.9,41.2 L 62.6,50.8 L 66.9,65.8 L 54,57 L 41.1,65.8 L 45.4,50.8 L 33.1,41.2 L 48.7,40.7 Z" />
+
+    <!-- Left eye -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M 47.2,44 a 1.8,1.8 0 1,0 3.6,0 a 1.8,1.8 0 1,0 -3.6,0 Z" />
+
+    <!-- Right eye -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M 57.2,44 a 1.8,1.8 0 1,0 3.6,0 a 1.8,1.8 0 1,0 -3.6,0 Z" />
+
+    <!-- Smile (U-curve = smile in screen coordinates) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#5D4037"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M 49,51 Q 54,56 59,51" />
+
+    <!-- Sparkle top-right (4-pointed star) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M30,20 L78,20 Q82,20 82,24 L82,84 Q82,88 78,88 L30,88 Q26,88 26,84 L26,24 Q26,20 30,20 Z" />
+        android:pathData="M 80,19 L 81.2,22.8 L 85,24 L 81.2,25.2 L 80,29 L 78.8,25.2 L 75,24 L 78.8,22.8 Z" />
+
+    <!-- Sparkle left (4-pointed star) -->
     <path
-        android:fillColor="#E8D5FF"
-        android:pathData="M34,20 L38,20 L38,88 L34,88 Q30,88 30,84 L30,24 Q30,20 34,20 Z" />
-    <!-- 줄 -->
+        android:fillColor="#FFFFFF"
+        android:pathData="M 22,51 L 23,54 L 26,55 L 23,56 L 22,59 L 21,56 L 18,55 L 21,54 Z" />
+
+    <!-- Sparkle bottom-right (4-pointed star, smaller) -->
     <path
-        android:fillColor="#9C6ADE"
-        android:strokeColor="#9C6ADE"
-        android:strokeWidth="2"
-        android:pathData="M44,38 L74,38" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M 78,76.5 L 78.9,79.1 L 81.5,80 L 78.9,80.9 L 78,83.5 L 77.1,80.9 L 74.5,80 L 77.1,79.1 Z" />
+
+    <!-- Accent dot top-right (yellow) -->
     <path
-        android:fillColor="#9C6ADE"
-        android:strokeColor="#9C6ADE"
-        android:strokeWidth="2"
-        android:pathData="M44,50 L74,50" />
+        android:fillColor="#FFE082"
+        android:pathData="M 75.5,33 a 1.5,1.5 0 1,0 3,0 a 1.5,1.5 0 1,0 -3,0 Z" />
+
+    <!-- Accent dot upper-left (light blue) -->
     <path
-        android:fillColor="#9C6ADE"
-        android:strokeColor="#9C6ADE"
-        android:strokeWidth="2"
-        android:pathData="M44,62 L74,62" />
-    <!-- 하트 -->
+        android:fillColor="#E1F5FE"
+        android:pathData="M 24.5,38 a 1.5,1.5 0 1,0 3,0 a 1.5,1.5 0 1,0 -3,0 Z" />
+
+    <!-- Accent dot lower-left (light blue) -->
     <path
-        android:fillColor="#FF6B9D"
-        android:pathData="M54,72 C54,72 46,66 46,61 C46,57.5 48.5,55 52,56 C53,56.4 54,57.5 54,57.5 C54,57.5 55,56.4 56,56 C59.5,55 62,57.5 62,61 C62,66 54,72 54,72 Z" />
+        android:fillColor="#E1F5FE"
+        android:pathData="M 28.8,75 a 1.2,1.2 0 1,0 2.4,0 a 1.2,1.2 0 1,0 -2.4,0 Z" />
+
+    <!-- Accent dot right (yellow) -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M 84.8,42 a 1.2,1.2 0 1,0 2.4,0 a 1.2,1.2 0 1,0 -2.4,0 Z" />
+
 </vector>
