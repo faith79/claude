@@ -2,6 +2,7 @@ package com.example.diaryapp.data.source
 
 import com.example.diaryapp.data.model.DiaryEntry
 import com.example.diaryapp.data.model.EmotionTag
+import com.example.diaryapp.data.model.WeatherTag
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -60,29 +61,29 @@ class FirestoreDataSource @Inject constructor(
             .get().await()
             .documents
             .mapNotNull { it.toObject(DiaryEntryDto::class.java)?.toDomain(it.id) }
-            .filter {
-                it.title.contains(query, ignoreCase = true) ||
-                it.content.contains(query, ignoreCase = true)
-            }
+            .filter { it.content.contains(query, ignoreCase = true) }
 
+    // Design Ref: §3.4 — v0.1.0 하위 호환: imageUrl fallback, title 무시, weather nullable
     data class DiaryEntryDto(
         val userId: String = "",
-        val title: String = "",
         val content: String = "",
         val date: String = "",
         val emotion: String? = null,
-        val imageUrl: String? = null,
+        val weather: String? = null,
+        val imageUrls: List<String> = emptyList(),
+        val imageUrl: String? = null,   // 레거시 필드 — 읽기 전용
         val createdAt: Long = 0L,
         val updatedAt: Long = 0L
     ) {
         fun toDomain(id: String) = DiaryEntry(
             id = id,
             userId = userId,
-            title = title,
             content = content,
             date = date,
             emotion = emotion?.let { runCatching { EmotionTag.valueOf(it) }.getOrNull() },
-            imageUrl = imageUrl,
+            weather = weather?.let { runCatching { WeatherTag.valueOf(it) }.getOrNull() },
+            // Plan SC: imageUrl(구버전) → imageUrls[0] fallback
+            imageUrls = imageUrls.ifEmpty { imageUrl?.let { listOf(it) } ?: emptyList() },
             createdAt = createdAt,
             updatedAt = updatedAt
         )
@@ -90,11 +91,11 @@ class FirestoreDataSource @Inject constructor(
         companion object {
             fun fromDomain(e: DiaryEntry) = DiaryEntryDto(
                 userId = e.userId,
-                title = e.title,
                 content = e.content,
                 date = e.date,
                 emotion = e.emotion?.name,
-                imageUrl = e.imageUrl,
+                weather = e.weather?.name,
+                imageUrls = e.imageUrls,
                 createdAt = e.createdAt,
                 updatedAt = e.updatedAt
             )

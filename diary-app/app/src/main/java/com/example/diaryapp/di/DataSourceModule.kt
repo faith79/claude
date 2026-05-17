@@ -9,6 +9,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+// ImageCompressor는 @ApplicationContext를 통해 Hilt가 자동 주입 — 별도 @Provides 불필요
 @Module
 @InstallIn(SingletonComponent::class)
 object DataSourceModule {

@@ -1,11 +1,14 @@
 package com.example.diaryapp.ui.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,20 +28,21 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.data.model.DiaryEntry
-import com.example.diaryapp.data.model.EmotionTag
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryViewModel
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.util.Locale
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Design Ref: §4.1 — HorizontalPager 스와이프 달력 (SC-06) + 화살표 버튼 병존
+// Plan SC: SC-04 — FAB Upsert 체크 포함
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     onDateSelected: (String) -> Unit,
     onAddDiary: (String) -> Unit,
+    onEditDiary: (String, String) -> Unit,
     onSettings: () -> Unit,
     onLogout: () -> Unit,
     diaryViewModel: DiaryViewModel = hiltViewModel(),
@@ -46,14 +50,29 @@ fun HomeScreen(
 ) {
     val userId = authViewModel.currentUserId
     val diaries by diaryViewModel.diaries.collectAsStateWithLifecycle()
-    val currentMonth by diaryViewModel.currentMonth.collectAsStateWithLifecycle()
     val searchResults by diaryViewModel.searchResults.collectAsStateWithLifecycle()
 
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
 
-    LaunchedEffect(currentMonth, userId) {
-        if (userId.isNotEmpty()) diaryViewModel.loadMonth(userId, currentMonth)
+    val scope = rememberCoroutineScope()
+
+    // Page ↔ YearMonth mapping anchored at 2000-01
+    val BASE_YEAR = 2000
+    val TOTAL_PAGES = (2100 - BASE_YEAR) * 12
+    val now = YearMonth.now()
+    val initialPage = (now.year - BASE_YEAR) * 12 + (now.monthValue - 1)
+
+    val pagerState = rememberPagerState(initialPage = initialPage) { TOTAL_PAGES }
+
+    fun pageToYearMonth(page: Int): YearMonth =
+        YearMonth.of(BASE_YEAR + page / 12, page % 12 + 1)
+
+    // Load month data whenever pager settles on a new page
+    LaunchedEffect(pagerState.settledPage, userId) {
+        if (userId.isNotEmpty()) {
+            diaryViewModel.loadMonth(userId, pageToYearMonth(pagerState.settledPage))
+        }
     }
 
     val diaryMap = remember(diaries) {
@@ -69,11 +88,15 @@ fun HomeScreen(
                         searchQuery = it
                         diaryViewModel.searchDiaries(userId, it)
                     },
-                    onClose = { showSearch = false; searchQuery = ""; diaryViewModel.searchDiaries(userId, "") }
+                    onClose = {
+                        showSearch = false
+                        searchQuery = ""
+                        diaryViewModel.searchDiaries(userId, "")
+                    }
                 )
             } else {
                 TopAppBar(
-                    title = { Text("내 일기장") },
+                    title = { Text("조이어리") },
                     actions = {
                         IconButton(onClick = { showSearch = true }) {
                             Icon(Icons.Default.Search, "검색")
@@ -87,7 +110,16 @@ fun HomeScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                onAddDiary(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE))
+                // Plan SC: SC-04 — 오늘 일기 있으면 수정, 없으면 신규 작성
+                scope.launch {
+                    val todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    val existing = diaryViewModel.getEntryByDate(userId, todayDate)
+                    if (existing != null) {
+                        onEditDiary(todayDate, existing.id)
+                    } else {
+                        onAddDiary(todayDate)
+                    }
+                }
             }) {
                 Icon(Icons.Default.Add, "일기 추가")
             }
@@ -104,19 +136,36 @@ fun HomeScreen(
                     onItemClick = { onDateSelected(it.date) }
                 )
             } else {
-                CalendarHeader(
-                    currentMonth = currentMonth,
-                    onPrev = { diaryViewModel.loadMonth(userId, currentMonth.minusMonths(1)) },
-                    onNext = { diaryViewModel.loadMonth(userId, currentMonth.plusMonths(1)) }
-                )
-                CalendarGrid(
-                    yearMonth = currentMonth,
-                    diaryMap = diaryMap,
-                    onDateClick = { date ->
-                        if (diaryMap.containsKey(date)) onDateSelected(date)
-                        else onAddDiary(date)
+                // Plan SC: SC-06 — 스와이프로 월 이동
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    val pageMonth = pageToYearMonth(page)
+                    Column {
+                        CalendarHeader(
+                            currentMonth = pageMonth,
+                            onPrev = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                }
+                            },
+                            onNext = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
+                            }
+                        )
+                        CalendarGrid(
+                            yearMonth = pageMonth,
+                            diaryMap = diaryMap,
+                            onDateClick = { date ->
+                                if (diaryMap.containsKey(date)) onDateSelected(date)
+                                else onAddDiary(date)
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     }
@@ -137,7 +186,7 @@ private fun SearchBar(
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            placeholder = { Text("제목, 내용 검색...") },
+            placeholder = { Text("내용 검색...") },
             modifier = Modifier.weight(1f),
             singleLine = true
         )
@@ -159,8 +208,10 @@ private fun SearchResultsList(
     Column {
         results.forEach { entry ->
             ListItem(
-                headlineContent = { Text(entry.title.ifBlank { "(제목 없음)" }) },
-                supportingContent = { Text(entry.date + if (entry.emotion != null) " ${entry.emotion.emoji}" else "") },
+                headlineContent = { Text(entry.content.take(30).ifBlank { "(내용 없음)" }) },
+                supportingContent = {
+                    Text(entry.date + if (entry.emotion != null) " ${entry.emotion.emoji}" else "")
+                },
                 modifier = Modifier.clickable { onItemClick(entry) }
             )
             HorizontalDivider()
@@ -276,7 +327,7 @@ private fun DayCell(
             text = day.toString(),
             fontSize = 13.sp,
             color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onSurface
+            else MaterialTheme.colorScheme.onSurface
         )
         if (emotion != null) {
             Text(emotion.emoji, fontSize = 12.sp)

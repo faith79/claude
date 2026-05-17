@@ -53,6 +53,9 @@ fun NavGraph(
                 onAddDiary = { date ->
                     navController.navigate(Screen.DiaryEditor.createRoute(date))
                 },
+                onEditDiary = { date, id ->
+                    navController.navigate(Screen.DiaryEditor.createRoute(date, id))
+                },
                 onSettings = { navController.navigate(Screen.Settings.route) },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {

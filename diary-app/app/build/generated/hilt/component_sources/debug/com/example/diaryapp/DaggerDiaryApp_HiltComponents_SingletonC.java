@@ -20,6 +20,7 @@ import com.example.diaryapp.data.repository.DiaryRepositoryImpl;
 import com.example.diaryapp.data.source.AuthDataSource;
 import com.example.diaryapp.data.source.FirestoreDataSource;
 import com.example.diaryapp.data.source.StorageDataSource;
+import com.example.diaryapp.data.util.ImageCompressor;
 import com.example.diaryapp.di.DataSourceModule_ProvideFirebaseAuthFactory;
 import com.example.diaryapp.di.DataSourceModule_ProvideFirebaseStorageFactory;
 import com.example.diaryapp.di.DataSourceModule_ProvideFirestoreFactory;
@@ -488,7 +489,7 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
           return (T) new AuthViewModel(singletonCImpl.bindAuthRepositoryProvider.get());
 
           case 1: // com.example.diaryapp.viewmodel.DiaryViewModel
-          return (T) new DiaryViewModel(singletonCImpl.bindDiaryRepositoryProvider.get());
+          return (T) new DiaryViewModel(singletonCImpl.bindDiaryRepositoryProvider.get(), singletonCImpl.imageCompressorProvider.get());
 
           case 2: // com.example.diaryapp.viewmodel.SettingsViewModel
           return (T) new SettingsViewModel(singletonCImpl.provideNotificationPreferencesProvider.get(), singletonCImpl.provideWorkManagerProvider.get());
@@ -589,6 +590,8 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
 
     Provider<DiaryRepository> bindDiaryRepositoryProvider;
 
+    Provider<ImageCompressor> imageCompressorProvider;
+
     Provider<NotificationPreferences> provideNotificationPreferencesProvider;
 
     Provider<WorkManager> provideWorkManagerProvider;
@@ -630,8 +633,9 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
       this.provideFirebaseStorageProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseStorage>(singletonCImpl, 5));
       this.diaryRepositoryImplProvider = new SwitchingProvider<>(singletonCImpl, 3);
       this.bindDiaryRepositoryProvider = DoubleCheck.provider((Provider) (diaryRepositoryImplProvider));
-      this.provideNotificationPreferencesProvider = DoubleCheck.provider(new SwitchingProvider<NotificationPreferences>(singletonCImpl, 6));
-      this.provideWorkManagerProvider = DoubleCheck.provider(new SwitchingProvider<WorkManager>(singletonCImpl, 7));
+      this.imageCompressorProvider = DoubleCheck.provider(new SwitchingProvider<ImageCompressor>(singletonCImpl, 6));
+      this.provideNotificationPreferencesProvider = DoubleCheck.provider(new SwitchingProvider<NotificationPreferences>(singletonCImpl, 7));
+      this.provideWorkManagerProvider = DoubleCheck.provider(new SwitchingProvider<WorkManager>(singletonCImpl, 8));
     }
 
     @Override
@@ -697,10 +701,13 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
           case 5: // com.google.firebase.storage.FirebaseStorage
           return (T) DataSourceModule_ProvideFirebaseStorageFactory.provideFirebaseStorage();
 
-          case 6: // com.example.diaryapp.notification.NotificationPreferences
+          case 6: // com.example.diaryapp.data.util.ImageCompressor
+          return (T) new ImageCompressor(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 7: // com.example.diaryapp.notification.NotificationPreferences
           return (T) NotificationModule_ProvideNotificationPreferencesFactory.provideNotificationPreferences(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 7: // androidx.work.WorkManager
+          case 8: // androidx.work.WorkManager
           return (T) NotificationModule_ProvideWorkManagerFactory.provideWorkManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           default: throw new AssertionError(id);

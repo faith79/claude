@@ -14,16 +14,35 @@ class DiaryRepositoryImpl @Inject constructor(
 ) : DiaryRepository {
     override fun getDiariesByMonth(userId: String, yearMonth: YearMonth): Flow<List<DiaryEntry>> =
         firestoreDataSource.getDiariesByMonth(userId, yearMonth)
+
     override suspend fun getDiaryByDate(userId: String, date: String): DiaryEntry? =
         firestoreDataSource.getDiaryByDate(userId, date)
+
     override suspend fun saveDiary(entry: DiaryEntry): Result<String> =
         runCatching { firestoreDataSource.saveDiary(entry) }
+
     override suspend fun updateDiary(entry: DiaryEntry): Result<Unit> =
         runCatching { firestoreDataSource.updateDiary(entry) }
-    override suspend fun deleteDiary(diaryId: String): Result<Unit> =
-        runCatching { firestoreDataSource.deleteDiary(diaryId) }
+
+    // Plan SC: Firestore 삭제 성공 후에만 Storage 삭제 (SC-09)
+    override suspend fun deleteDiaryWithImages(entry: DiaryEntry): Result<Unit> {
+        val deleteFirestore = runCatching { firestoreDataSource.deleteDiary(entry.id) }.map { Unit }
+        if (deleteFirestore.isFailure) return deleteFirestore
+        if (entry.imageUrls.isNotEmpty()) {
+            storageDataSource.deleteImages(entry.imageUrls)
+        }
+        return Result.success(Unit)
+    }
+
     override suspend fun searchDiaries(userId: String, query: String): List<DiaryEntry> =
         firestoreDataSource.searchDiaries(userId, query)
+
     override suspend fun uploadImage(userId: String, diaryId: String, uri: Uri): Result<String> =
         runCatching { storageDataSource.uploadImage(userId, diaryId, uri) }
+
+    override suspend fun uploadImages(userId: String, diaryId: String, byteArrays: List<ByteArray>): Result<List<String>> =
+        runCatching { storageDataSource.uploadImages(userId, diaryId, byteArrays) }
+
+    override suspend fun deleteImage(imageUrl: String): Result<Unit> =
+        storageDataSource.deleteImage(imageUrl)
 }

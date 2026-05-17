@@ -1,8 +1,27 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.diaryapp-mergeDebugResources-69:/values-watch-v20/values-watch-v20.xml",
+            "outputFile": "com.example.diaryapp-mergeDebugResources-72:/values-watch-v20/values-watch-v20.xml",
             "map": [
+                {
+                    "source": "C:\\Users\\JOEY\\.gradle\\caches\\9.4.1\\transforms\\ccda822d328957ae13a74688580bf0a4\\transformed\\appcompat-1.6.1\\res\\values-watch-v20\\values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,5,8",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,214,385",
+                        "endLines": "4,7,10",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "209,380,553"
+                    },
+                    "to": {
+                        "startLines": "10,13,16",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "715,874,1045",
+                        "endLines": "12,15,18",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "869,1040,1213"
+                    }
+                },
                 {
                     "source": "C:\\Users\\JOEY\\.gradle\\caches\\9.4.1\\transforms\\f2d0b7dfe6fdf0bc2fccd123d93ecfb7\\transformed\\play-services-auth-20.7.0\\res\\values-watch-v20\\values.xml",
                     "from": {

@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.firebase.storage.ktx)
 
     implementation(libs.coil.compose)
+    implementation("com.airbnb.android:lottie-compose:6.4.0")
     implementation(libs.work.runtime.ktx)
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)
