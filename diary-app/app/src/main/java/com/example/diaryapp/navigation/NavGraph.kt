@@ -2,7 +2,6 @@ package com.example.diaryapp.navigation
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -17,6 +16,7 @@ import com.example.diaryapp.ui.diary.DiaryEditorScreen
 import com.example.diaryapp.ui.home.HomeScreen
 import com.example.diaryapp.ui.settings.SettingsScreen
 import com.example.diaryapp.viewmodel.AuthViewModel
+import com.example.diaryapp.viewmodel.DiaryViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
 
 @Composable
@@ -73,6 +73,10 @@ fun NavGraph(
             arguments = listOf(navArgument("date") { type = NavType.StringType })
         ) { backStack ->
             val date = backStack.arguments?.getString("date") ?: return@composable
+            // Design Ref: joyary-upgrade-v10 — Activity 스코프 공유 ViewModel
+            // Detail·Editor가 동일 인스턴스를 관찰해야 saveDiary force-refresh가 Detail에 전달됨
+            val activity = LocalContext.current as ComponentActivity
+            val diaryViewModel: DiaryViewModel = hiltViewModel(activity)
             DiaryDetailScreen(
                 date = date,
                 onEdit = { d, id ->
@@ -83,7 +87,8 @@ fun NavGraph(
                 // Design Ref: §5.3 — 빈 날 '일기 쓰기' 버튼 → DiaryEditor 이동 (FR-10)
                 onAddDiary = { d ->
                     navController.navigate(Screen.DiaryEditor.createRoute(d))
-                }
+                },
+                diaryViewModel = diaryViewModel
             )
         }
 
@@ -96,11 +101,15 @@ fun NavGraph(
         ) { backStack ->
             val date = backStack.arguments?.getString("date") ?: return@composable
             val id = backStack.arguments?.getString("id") ?: ""
+            // Design Ref: joyary-upgrade-v10 — Activity 스코프 공유 ViewModel (DiaryDetail과 동일 인스턴스)
+            val activity = LocalContext.current as ComponentActivity
+            val diaryViewModel: DiaryViewModel = hiltViewModel(activity)
             DiaryEditorScreen(
                 date = date,
                 existingId = id,
                 onSaved = { navController.popBackStack() },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                diaryViewModel = diaryViewModel
             )
         }
 
