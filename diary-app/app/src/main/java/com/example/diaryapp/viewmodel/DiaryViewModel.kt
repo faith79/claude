@@ -7,6 +7,7 @@ import com.example.diaryapp.data.model.DiaryEntry
 import com.example.diaryapp.data.model.EmotionTag
 import com.example.diaryapp.data.model.WeatherTag
 import com.example.diaryapp.data.repository.DiaryRepository
+import com.example.diaryapp.data.util.DiaryLocalCache
 import com.example.diaryapp.data.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,8 @@ sealed class DiaryUiState {
 @HiltViewModel
 class DiaryViewModel @Inject constructor(
     private val diaryRepository: DiaryRepository,
-    private val imageCompressor: ImageCompressor
+    private val imageCompressor: ImageCompressor,
+    private val localCache: DiaryLocalCache
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<DiaryUiState>(DiaryUiState.Idle)
@@ -52,20 +54,13 @@ class DiaryViewModel @Inject constructor(
     private val _currentMonth = MutableStateFlow(YearMonth.now())
     val currentMonth: StateFlow<YearMonth> = _currentMonth.asStateFlow()
 
-    // Design Ref: joyary-upgrade-v7 §2.1 — TTL 래퍼 + 24h 자동 만료 캐시 (FR-03, FR-04)
-    private data class CachedValue<T>(val data: T, val cachedAt: Long = System.currentTimeMillis())
-    private val TTL_MS = 24L * 60 * 60 * 1000  // 24시간
-
-    private fun CachedValue<*>.isExpired() = System.currentTimeMillis() - cachedAt >= TTL_MS
-
-    // Key: "userId_yearMonth" (예: "abc_2026-05"), Value: 해당 월 일기 목록
-    private val monthCache = mutableMapOf<String, CachedValue<List<DiaryEntry>>>()
-    // Key: "userId_date" (예: "abc_2026-05-23"), Value: 해당 날짜 일기 (없으면 null 저장)
-    private val entryCache = mutableMapOf<String, CachedValue<DiaryEntry?>>()
+    // Design Ref: joyary-upgrade-v8 §4.2 — L1 메모리 캐시 (세션 내 즉시 조회)
+    private val memMonthCache = mutableMapOf<String, List<DiaryEntry>>()
+    private val memEntryCache = mutableMapOf<String, DiaryEntry?>()
 
     init {
-        // Design Ref: joyary-upgrade-v7 §2.4 — ViewModel 생성 시 만료 캐시 일괄 정리 (FR-06)
-        cleanupExpiredCache()
+        // Design Ref: joyary-upgrade-v8 §4.2 — 앱 시작 시 L2 만료 파일 삭제 (SC-05)
+        localCache.cleanupExpired()
     }
 
     // Plan SC: SC-04 Upsert — 해당 날짜 일기 존재 여부 반환
@@ -75,20 +70,18 @@ class DiaryViewModel @Inject constructor(
     fun loadMonth(userId: String, yearMonth: YearMonth) {
         _currentMonth.value = yearMonth
         val key = "${userId}_${yearMonth}"
-        // Design Ref: joyary-upgrade-v7 §2.2 — TTL 유효 시 즉시 반환, 만료 시 lazy eviction (FR-03)
-        val cached = monthCache[key]
-        if (cached != null) {
-            if (!cached.isExpired()) {
-                _diaries.value = cached.data
-                return
-            } else {
-                monthCache.remove(key)
-            }
+        // Design Ref: joyary-upgrade-v8 §4.3 — L1(메모리) → L2(디스크) → Firestore (SC-02)
+        memMonthCache[key]?.let { _diaries.value = it; return }
+        localCache.getMonth(key)?.let { list ->
+            memMonthCache[key] = list
+            _diaries.value = list
+            return
         }
         viewModelScope.launch {
             try {
                 diaryRepository.getDiariesByMonth(userId, yearMonth).collect { list ->
-                    monthCache[key] = CachedValue(list)
+                    memMonthCache[key] = list
+                    localCache.putMonth(key, list)
                     _diaries.value = list
                 }
             } catch (e: Exception) {
@@ -99,20 +92,18 @@ class DiaryViewModel @Inject constructor(
 
     fun loadDiaryByDate(userId: String, date: String) {
         val key = "${userId}_${date}"
-        // Design Ref: joyary-upgrade-v7 §2.2 — TTL 유효 시 즉시 반환, 만료 시 lazy eviction (FR-04)
-        val cached = entryCache[key]
-        if (cached != null) {
-            if (!cached.isExpired()) {
-                _selectedEntry.value = cached.data
-                return
-            } else {
-                entryCache.remove(key)
-            }
+        // Design Ref: joyary-upgrade-v8 §4.4 — L1(메모리) → L2(디스크) → Firestore (SC-03)
+        if (memEntryCache.containsKey(key)) { _selectedEntry.value = memEntryCache[key]; return }
+        localCache.getEntry(key)?.let { (_, entry) ->
+            memEntryCache[key] = entry
+            _selectedEntry.value = entry
+            return
         }
         viewModelScope.launch {
             _isDetailLoading.value = true
             val result = diaryRepository.getDiaryByDate(userId, date)
-            entryCache[key] = CachedValue(result)
+            memEntryCache[key] = result
+            localCache.putEntry(key, result)
             _selectedEntry.value = result
             _isDetailLoading.value = false
         }
@@ -207,17 +198,15 @@ class DiaryViewModel @Inject constructor(
         }
     }
 
-    // Design Ref: joyary-upgrade-v6 §5.3 — 해당 날짜 + 해당 월 캐시 무효화 (FR-06)
+    // Design Ref: joyary-upgrade-v8 §4.5 — L1 + L2 동시 무효화 (SC-04)
     private fun invalidateCache(userId: String, date: String) {
-        val yearMonth = date.substring(0, 7)  // "YYYY-MM"
-        monthCache.remove("${userId}_${yearMonth}")
-        entryCache.remove("${userId}_${date}")
-    }
-
-    // Design Ref: joyary-upgrade-v7 §2.4 — 만료된 모든 캐시 엔트리 일괄 삭제 (FR-06)
-    private fun cleanupExpiredCache() {
-        monthCache.entries.removeAll { it.value.isExpired() }
-        entryCache.entries.removeAll { it.value.isExpired() }
+        val yearMonth = date.substring(0, 7)
+        val monthKey = "${userId}_${yearMonth}"
+        val entryKey = "${userId}_${date}"
+        memMonthCache.remove(monthKey)
+        memEntryCache.remove(entryKey)
+        localCache.removeMonth(monthKey)
+        localCache.removeEntry(entryKey)
     }
 
     fun resetState() { _uiState.value = DiaryUiState.Idle }

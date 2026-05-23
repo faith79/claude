@@ -1,6 +1,7 @@
 package com.example.diaryapp.viewmodel;
 
 import com.example.diaryapp.data.repository.DiaryRepository;
+import com.example.diaryapp.data.util.DiaryLocalCache;
 import com.example.diaryapp.data.util.ImageCompressor;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
@@ -30,24 +31,29 @@ public final class DiaryViewModel_Factory implements Factory<DiaryViewModel> {
 
   private final Provider<ImageCompressor> imageCompressorProvider;
 
+  private final Provider<DiaryLocalCache> localCacheProvider;
+
   private DiaryViewModel_Factory(Provider<DiaryRepository> diaryRepositoryProvider,
-      Provider<ImageCompressor> imageCompressorProvider) {
+      Provider<ImageCompressor> imageCompressorProvider,
+      Provider<DiaryLocalCache> localCacheProvider) {
     this.diaryRepositoryProvider = diaryRepositoryProvider;
     this.imageCompressorProvider = imageCompressorProvider;
+    this.localCacheProvider = localCacheProvider;
   }
 
   @Override
   public DiaryViewModel get() {
-    return newInstance(diaryRepositoryProvider.get(), imageCompressorProvider.get());
+    return newInstance(diaryRepositoryProvider.get(), imageCompressorProvider.get(), localCacheProvider.get());
   }
 
   public static DiaryViewModel_Factory create(Provider<DiaryRepository> diaryRepositoryProvider,
-      Provider<ImageCompressor> imageCompressorProvider) {
-    return new DiaryViewModel_Factory(diaryRepositoryProvider, imageCompressorProvider);
+      Provider<ImageCompressor> imageCompressorProvider,
+      Provider<DiaryLocalCache> localCacheProvider) {
+    return new DiaryViewModel_Factory(diaryRepositoryProvider, imageCompressorProvider, localCacheProvider);
   }
 
   public static DiaryViewModel newInstance(DiaryRepository diaryRepository,
-      ImageCompressor imageCompressor) {
-    return new DiaryViewModel(diaryRepository, imageCompressor);
+      ImageCompressor imageCompressor, DiaryLocalCache localCache) {
+    return new DiaryViewModel(diaryRepository, imageCompressor, localCache);
   }
 }

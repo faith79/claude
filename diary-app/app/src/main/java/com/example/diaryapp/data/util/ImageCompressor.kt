@@ -17,7 +17,8 @@ import javax.inject.Singleton
 class ImageCompressor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val maxSizeBytes = 102_400L // 100KB (100 × 1024)
+    // Design Ref: joyary-upgrade-v8 §5 — 30KB 한도 (SC-06)
+    private val maxSizeBytes = 30_720L // 30KB (30 × 1024)
 
     fun compress(uri: Uri): ByteArray {
         val rotation = readExifRotation(uri)
@@ -30,9 +31,10 @@ class ImageCompressor @Inject constructor(
         val originalWidth = boundsOpts.outWidth
         val originalHeight = boundsOpts.outHeight
 
-        // Step 2: maxDimension을 단계적으로 줄이며 100KB 이하가 될 때까지 시도
+        // Step 2: maxDimension을 단계적으로 줄이며 30KB 이하가 될 때까지 시도
         // 첫 번째 성공한 결과 반환 → 불필요한 화질 저하 최소화
-        val maxDimensions = listOf(1280, 800, 480, 240)
+        // Design Ref: joyary-upgrade-v8 §5 — [640,480,320,160] + quality=75 (SC-07)
+        val maxDimensions = listOf(640, 480, 320, 160)
         for (maxDim in maxDimensions) {
             val sampleSize = calculateInSampleSize(originalWidth, originalHeight, maxDim)
             val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
@@ -48,8 +50,8 @@ class ImageCompressor @Inject constructor(
                 bitmap = rotated
             }
 
-            // Step 3: quality 85 → 10 (10 포함) 단계적 감소
-            var quality = 85
+            // Step 3: quality 75 → 10 (10 포함) 단계적 감소
+            var quality = 75
             var output: ByteArray
             do {
                 val stream = ByteArrayOutputStream()

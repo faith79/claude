@@ -1,8 +1,8 @@
 {
   "version": "3.0",
   "lastUpdated": "2026-05-23T00:00:00.000Z",
-  "activeFeatures": ["image-compression-fix"],
-  "primaryFeature": "image-compression-fix",
+  "activeFeatures": ["joyary-upgrade-v8"],
+  "primaryFeature": "joyary-upgrade-v8",
   "features": {
     "joyary-upgrade-v6": {
       "phase": "completed",
@@ -30,6 +30,15 @@
       "iterationCount": 0,
       "planPath": "docs/01-plan/features/image-compression-fix.plan.md",
       "reportPath": "docs/04-report/features/image-compression-fix.report.md"
+    },
+    "joyary-upgrade-v8": {
+      "phase": "completed",
+      "startedAt": "2026-05-23T00:00:00.000Z",
+      "completedAt": "2026-05-23T00:00:00.000Z",
+      "matchRate": 100,
+      "iterationCount": 1,
+      "planPath": "docs/01-plan/features/joyary-upgrade-v8.plan.md",
+      "reportPath": "docs/04-report/features/joyary-upgrade-v8.report.md"
     }
   },
   "pipeline": {
