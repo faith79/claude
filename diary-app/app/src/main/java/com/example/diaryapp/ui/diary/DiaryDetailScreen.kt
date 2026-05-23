@@ -1,5 +1,11 @@
 package com.example.diaryapp.ui.diary
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -175,12 +181,16 @@ private fun DiaryPageContent(
                 )
             }
         ) { padding ->
-            if (!isCurrentPage || isDetailLoading) {
-                Box(
-                    Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
-                return@Scaffold
+            // Design Ref: joyary-upgrade-v9 §3.2 — 스켈레톤 분기 (SC-06)
+            when {
+                !isCurrentPage -> {
+                    Box(Modifier.fillMaxSize().padding(padding))
+                    return@Scaffold
+                }
+                isDetailLoading -> {
+                    DiaryDetailSkeleton(Modifier.fillMaxSize().padding(padding))
+                    return@Scaffold
+                }
             }
 
             if (entry == null) {
@@ -375,5 +385,51 @@ private fun DiaryEntryContent(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+// Design Ref: joyary-upgrade-v9 §3.1 — 로딩 중 콘텐츠 구조 표시 (SC-05)
+@Composable
+private fun DiaryDetailSkeleton(modifier: Modifier = Modifier) {
+    val alpha by rememberInfiniteTransition(label = "skeleton")
+        .animateFloat(
+            initialValue = 0.35f,
+            targetValue = 0.8f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "alpha"
+        )
+    val shimmer = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha)
+
+    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+        // 이미지 플레이스홀더
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(shimmer)
+        )
+        // 감정/날씨 칩 플레이스홀더
+        Row(
+            Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(Modifier.width(80.dp).height(32.dp).clip(RoundedCornerShape(16.dp)).background(shimmer))
+            Box(Modifier.width(80.dp).height(32.dp).clip(RoundedCornerShape(16.dp)).background(shimmer))
+        }
+        Spacer(Modifier.height(12.dp))
+        // 본문 카드 플레이스홀더
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(shimmer)
+        )
     }
 }

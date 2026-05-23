@@ -10,10 +10,12 @@ import com.example.diaryapp.data.repository.DiaryRepository
 import com.example.diaryapp.data.util.DiaryLocalCache
 import com.example.diaryapp.data.util.ImageCompressor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.YearMonth
 import javax.inject.Inject
 
@@ -72,16 +74,21 @@ class DiaryViewModel @Inject constructor(
         val key = "${userId}_${yearMonth}"
         // Design Ref: joyary-upgrade-v8 §4.3 — L1(메모리) → L2(디스크) → Firestore (SC-02)
         memMonthCache[key]?.let { _diaries.value = it; return }
-        localCache.getMonth(key)?.let { list ->
-            memMonthCache[key] = list
-            _diaries.value = list
-            return
-        }
+        // Design Ref: joyary-upgrade-v9 §2.3 — L2 읽기/쓰기 IO dispatcher (SC-02)
         viewModelScope.launch {
+            val cached = withContext(Dispatchers.IO) { localCache.getMonth(key) }
+            if (cached != null) {
+                warmEntryCache(userId, cached)
+                memMonthCache[key] = cached
+                _diaries.value = cached
+                return@launch
+            }
             try {
                 diaryRepository.getDiariesByMonth(userId, yearMonth).collect { list ->
+                    // Design Ref: joyary-upgrade-v9 §2.3 — 월 로드 시 entry 선채움 (SC-04)
+                    warmEntryCache(userId, list)
                     memMonthCache[key] = list
-                    localCache.putMonth(key, list)
+                    withContext(Dispatchers.IO) { localCache.putMonth(key, list) }
                     _diaries.value = list
                 }
             } catch (e: Exception) {
@@ -90,20 +97,34 @@ class DiaryViewModel @Inject constructor(
         }
     }
 
+    // Design Ref: joyary-upgrade-v9 §2.3 — 월 내 모든 entry를 memEntryCache에 선채움 (SC-04)
+    private fun warmEntryCache(userId: String, entries: List<DiaryEntry>) {
+        entries.forEach { entry ->
+            val entryKey = "${userId}_${entry.date}"
+            if (!memEntryCache.containsKey(entryKey)) {
+                memEntryCache[entryKey] = entry
+            }
+        }
+    }
+
     fun loadDiaryByDate(userId: String, date: String) {
         val key = "${userId}_${date}"
         // Design Ref: joyary-upgrade-v8 §4.4 — L1(메모리) → L2(디스크) → Firestore (SC-03)
         if (memEntryCache.containsKey(key)) { _selectedEntry.value = memEntryCache[key]; return }
-        localCache.getEntry(key)?.let { (_, entry) ->
-            memEntryCache[key] = entry
-            _selectedEntry.value = entry
-            return
-        }
+        // Design Ref: joyary-upgrade-v9 §2.4 — L2 읽기/쓰기 IO dispatcher (SC-03)
         viewModelScope.launch {
             _isDetailLoading.value = true
+            val cached = withContext(Dispatchers.IO) { localCache.getEntry(key) }
+            if (cached != null) {
+                val (_, entry) = cached
+                memEntryCache[key] = entry
+                _selectedEntry.value = entry
+                _isDetailLoading.value = false
+                return@launch
+            }
             val result = diaryRepository.getDiaryByDate(userId, date)
             memEntryCache[key] = result
-            localCache.putEntry(key, result)
+            withContext(Dispatchers.IO) { localCache.putEntry(key, result) }
             _selectedEntry.value = result
             _isDetailLoading.value = false
         }
@@ -156,8 +177,20 @@ class DiaryViewModel @Inject constructor(
                     diaryRepository.updateDiary(entry).getOrThrow()
                 }
             }.onSuccess {
-                // Design Ref: joyary-upgrade-v6 §5.3 — 저장 성공 시 캐시 무효화 (FR-06)
+                // Design Ref: joyary-upgrade-v8 §4.5 — 저장 성공 시 L1+L2 캐시 무효화 (FR-06)
                 invalidateCache(userId, date)
+                // Design Ref: joyary-upgrade-v9 §2.2 — Firestore 강제 재조회 (SC-01)
+                // 스켈레톤 트리거: 복귀 시 스켈레톤 → 최신 데이터 순서로 표시
+                _isDetailLoading.value = true
+                _selectedEntry.value = null
+                viewModelScope.launch {
+                    val key = "${userId}_${date}"
+                    val result = diaryRepository.getDiaryByDate(userId, date)
+                    memEntryCache[key] = result
+                    withContext(Dispatchers.IO) { localCache.putEntry(key, result) }
+                    _selectedEntry.value = result
+                    _isDetailLoading.value = false
+                }
                 _uiState.value = DiaryUiState.Success
             }.onFailure {
                 _uiState.value = DiaryUiState.Error(it.message ?: "저장 실패")
