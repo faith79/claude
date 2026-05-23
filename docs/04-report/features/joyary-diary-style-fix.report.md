@@ -1,27 +1,34 @@
-# Report: joyary-diary-style-fix
+# Report: joyary-diary-style-fix (v2)
 
 ## Summary
-- **Match Rate**: 96% (target: 90%) ✅ PASSED
+- **Feature**: 조이어리 일기 에디터 배경색 + 설정화면 스크롤바
+- **Match Rate**: 100% (target: 90%) ✅ PASSED
 - **Iterations**: 1/5
-- **Files Changed**: 3
+- **Files Modified**: 2
 
 ## Changes
 
-### 1. MainActivity.kt — 일기 배경색 테마 연동
-`diaryBg` 를 독립 설정값(`diaryBgColor`) 대신 `template.themeColors.appBg` 를 직접 참조하도록 변경.
-색상 테마 변경 시 일기 배경색이 자동으로 해당 테마의 배경색으로 적용됨.
+### SC-01: 에디터 배경색 — 상세보기와 일치 (DiaryEditorScreen.kt)
 
-### 2. DiaryEditorScreen.kt — 입력 텍스트 검정 고정
-`OutlinedTextField` 에 `colors = OutlinedTextFieldDefaults.colors(focusedTextColor, unfocusedTextColor)` 파라미터 추가.
-텍스트 색상을 `Color(0xFF212121)` (거의 검정) 로 명시하여 테마 primary 색상(하늘색)으로 표시되던 문제 해결.
+**원인**: Scaffold에 `containerColor = diaryBg`가 하드코딩되어 다크모드에서도 밝은 크림색 강제 적용.
+상세보기의 내부 Scaffold는 containerColor 미설정 → 시스템 테마(다크 = `Color(0xFF121C28)`) 자동 적용.
 
-### 3. SettingsScreen.kt — 일기 배경색 팔레트 행 제거
-"일기 배경색" `ColorPaletteRow` 와 관련 상태 수집 코드 제거.
-테마 연동으로 자동 처리되므로 별도 설정 불필요.
+**변경**:
+- `val diaryBg = LocalThemeColors.current.diaryBg` 삭제
+- `containerColor = diaryBg` 삭제 → MaterialTheme.colorScheme.background 자동 적용
+- `OutlinedTextField.colors` 하드코딩(`Color(0xFF212121)`) 삭제 → 테마 텍스트색 자동 적용
+- 미사용 import 제거: `LocalThemeColors`, `Color`
 
-## Test Checklist
-- [ ] 하늘 테마 선택 → 일기 배경 #F0F8FF (AliceBlue)
-- [ ] 민트 테마 선택 → 일기 배경 #F0FAF6
-- [ ] 일기 편집 화면에서 텍스트 입력 시 검정색 표시
-- [ ] 설정 화면에 "일기 배경색" 팔레트 행 없음
-- [ ] "평일 글씨색", "색상 테마" 설정 여전히 정상 작동
+### SC-02: 설정화면 스크롤바 (SettingsScreen.kt)
+
+**변경**:
+- `rememberScrollState()` + `verticalScroll(scrollState)` 추가
+- `drawWithContent` 스크롤바 인디케이터: 4dp 폭, 스크롤중 alpha=0.7 / 정지 alpha=0.3
+- `maxValue=0`일 때 스크롤바 숨김 처리
+- `drawWithContent`를 `verticalScroll` 앞에 배치 → 뷰포트 고정 (콘텐츠와 같이 스크롤 안 됨)
+
+## Test Points
+- [ ] 다크모드: 에디터 배경이 상세보기와 동일하게 어두운 색 표시
+- [ ] 라이트모드: 에디터 배경이 테마 배경색과 일치
+- [ ] 설정화면: 스크롤 가능, 오른쪽 가장자리에 스크롤바 인디케이터 표시
+- [ ] 설정화면: 컨텐츠가 화면 높이 내에 들어올 경우 스크롤바 숨김

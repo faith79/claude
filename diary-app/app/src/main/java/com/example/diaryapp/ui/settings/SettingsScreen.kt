@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -15,6 +17,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -54,10 +59,29 @@ fun SettingsScreen(
             )
         }
     ) { padding ->
+        // Design Ref: joyary-diary-style-fix §SC-02 — verticalScroll + drawWithContent scrollbar
+        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .drawWithContent {
+                    drawContent()
+                    val max = scrollState.maxValue
+                    if (max > 0) {
+                        val ratio  = size.height / (size.height + max)
+                        val thumbH = size.height * ratio
+                        val thumbY = (size.height - thumbH) * (scrollState.value.toFloat() / max)
+                        val alpha  = if (scrollState.isScrollInProgress) 0.7f else 0.3f
+                        drawRect(
+                            color = Color.Gray,
+                            alpha = alpha,
+                            topLeft = Offset(size.width - 4.dp.toPx(), thumbY),
+                            size = Size(4.dp.toPx(), thumbH)
+                        )
+                    }
+                }
+                .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
             // 알림 섹션

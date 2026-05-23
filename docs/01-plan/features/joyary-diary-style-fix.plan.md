@@ -1,17 +1,26 @@
-# Plan: joyary-diary-style-fix
+# Plan: joyary-diary-style-fix (v2)
 
 ## Context Anchor
-- **WHY**: 일기 배경색이 색상테마와 별개로 관리되어 UX 일관성 저하. 일기 입력 텍스트가 하늘색으로 표시되어 가독성 문제.
-- **WHO**: 조이어리 앱 사용자
-- **RISK**: 기존 diaryBgColor 설정값 무시됨 (사용자가 의도한 변경)
-- **SUCCESS**: 테마 변경 시 일기 배경도 자동 연동, 텍스트 가시성 개선
-- **SCOPE**: SettingsScreen, MainActivity, DiaryEditorScreen 3파일 수정
+- **WHY**: 에디터 화면이 다크모드에서 밝은 크림 배경을 강제 적용하여 상세보기와 시각적 불일치 발생. 설정화면 콘텐츠가 길어도 스크롤 불가.
+- **WHO**: 조이어리 앱 사용자 (다크모드 사용자 포함)
+- **RISK**: OutlinedTextField 텍스트색 하드코딩 제거 시 테마 색상 자동 적용 — 다크모드에서 밝은 텍스트로 자동 변환
+- **SUCCESS**: 에디터 배경이 상세보기와 동일하게 시스템 테마 따라감. 설정화면에서 스크롤 + 스크롤바 표시
+- **SCOPE**: DiaryEditorScreen.kt, SettingsScreen.kt 2파일 수정
 
 ## Requirements
-1. 일기 배경색 → 색상테마의 appBg 색상과 동일하게 자동 연동
-2. DiaryEditorScreen OutlinedTextField 입력 텍스트 색상 → 검정색
+
+### SC-01: 에디터 배경색 = 상세보기 배경색
+- 상세보기(DiaryDetailScreen) 내부 Scaffold는 containerColor 미설정 → MaterialTheme.colorScheme.background 사용
+- 에디터(DiaryEditorScreen) Scaffold에서 `containerColor = diaryBg` 제거
+- OutlinedTextField의 하드코딩된 `Color(0xFF212121)` 텍스트 색상 제거 → 테마 자동 적용
+- 미사용 import 제거: LocalThemeColors, Color
+
+### SC-02: 설정화면 스크롤바
+- Scaffold 콘텐츠 Column에 `rememberScrollState()` + `verticalScroll()` 추가
+- `drawWithContent`로 오른쪽 가장자리에 스크롤바 인디케이터 렌더링
+- 스크롤 중: alpha 0.7, 정지 중: alpha 0.3
+- 스크롤 불필요할 경우(maxValue=0) 표시 안 함
 
 ## Changes
-- `MainActivity.kt`: `diaryBg = diaryBg` → `diaryBg = template.themeColors.appBg`
-- `DiaryEditorScreen.kt`: OutlinedTextField에 `colors` 파라미터로 텍스트 색상 명시
-- `SettingsScreen.kt`: "일기 배경색" 팔레트 행 제거 (테마 연동으로 불필요)
+- `DiaryEditorScreen.kt`: containerColor=diaryBg 제거, OutlinedTextField colors 제거, 미사용 import 정리
+- `SettingsScreen.kt`: verticalScroll + scrollState + drawWithContent scrollbar 추가

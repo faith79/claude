@@ -1,1 +1,9 @@
-﻿{"feature":"joyary-diary-style-fix","threshold":90,"status":"running"}
+{
+  "feature": "joyary-diary-style-fix",
+  "threshold": 90,
+  "startedAt": "2026-05-23T00:00:00.000Z",
+  "decisions": [],
+  "iterations": [],
+  "finalMatchRate": null,
+  "status": "running"
+}

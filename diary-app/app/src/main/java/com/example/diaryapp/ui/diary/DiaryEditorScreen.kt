@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,7 +24,6 @@ import com.example.diaryapp.data.model.WeatherTag
 import com.example.diaryapp.ui.components.LoadingOverlay
 import com.example.diaryapp.ui.components.MultiImagePicker
 import com.example.diaryapp.ui.components.WeatherSelector
-import com.example.diaryapp.ui.theme.LocalThemeColors
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryUiState
 import com.example.diaryapp.viewmodel.DiaryViewModel
@@ -77,11 +75,9 @@ fun DiaryEditorScreen(
         }
     }
 
-    // Design Ref: joyary-upgrade-v5 §5.1 — containerColor: appBg → diaryBg (FR-03, FR-04)
-    val diaryBg = LocalThemeColors.current.diaryBg
+    // Design Ref: joyary-diary-style-fix §SC-01 — containerColor 제거, 시스템 테마 따라감
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            containerColor = diaryBg,
             topBar = {
                 TopAppBar(
                     title = { Text(if (existingId.isEmpty()) "새 일기" else "일기 수정") },
@@ -150,11 +146,7 @@ fun DiaryEditorScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 200.dp),
-                    maxLines = Int.MAX_VALUE,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color(0xFF212121),
-                        unfocusedTextColor = Color(0xFF212121)
-                    )
+                    maxLines = Int.MAX_VALUE
                 )
 
                 Spacer(Modifier.height(16.dp))
