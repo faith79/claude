@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -40,6 +41,7 @@ import java.time.format.DateTimeFormatter
 
 // Design Ref: §5.3 — HorizontalPager 날짜 스와이프 ±365일 (FR-09,FR-10)
 // Design Ref: joyary-upgrade-v6 §5.2 — 날짜+요일 (FR-03), §5.5 — 이미지 확대 레이어 (FR-08, FR-09)
+// Design Ref: joyary-upgrade-v7 §3.3 — 이미지 오버레이 HorizontalPager 스와이프 (FR-01, FR-02)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DiaryDetailScreen(
@@ -131,7 +133,8 @@ private fun formatDateWithDay(dateStr: String): String {
 
 // Design Ref: §5.3 — 일기 있는 날: 기존 상세 UI / 없는 날: EmptyDiaryPage (FR-09, FR-10)
 // G-01 fix: selectedImageUrl 상태를 DiaryPageContent로 호이스팅 — overlay가 TopAppBar까지 커버
-@OptIn(ExperimentalMaterial3Api::class)
+// Design Ref: joyary-upgrade-v7 §3.1 — selectedImageIndex(Int?)로 변경, HorizontalPager 오버레이
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun DiaryPageContent(
     date: String,
@@ -144,8 +147,9 @@ private fun DiaryPageContent(
     onAddDiary: (String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    // G-01 fix: 상태를 여기서 관리해 overlay가 Scaffold 위를 덮도록 함
-    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
+    // Design Ref: joyary-upgrade-v7 §3.1 — Int? 인덱스로 관리 (null=닫힘, N=N번째 이미지 확대)
+    var selectedImageIndex by remember { mutableStateOf<Int?>(null) }
+    val overlayImages = entry?.imageUrls ?: emptyList()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -188,40 +192,57 @@ private fun DiaryPageContent(
                 DiaryEntryContent(
                     entry = entry,
                     modifier = Modifier.fillMaxSize().padding(padding),
-                    onImageClick = { url -> selectedImageUrl = url }
+                    onImageClick = { index -> selectedImageIndex = index }
                 )
             }
         }
 
-        // G-01 fix: Scaffold의 형제 요소로 배치 → TopAppBar를 포함한 전체 화면 커버
-        // Design Ref: joyary-upgrade-v6 §5.5 — 이미지 전체화면 오버레이 + X버튼 (FR-08, FR-09)
-        selectedImageUrl?.let { url ->
+        // Design Ref: joyary-upgrade-v7 §3.3 — HorizontalPager 오버레이 (FR-01, FR-02)
+        // 배경 클릭 닫기 제거: 스와이프 제스처와 충돌 방지 → X버튼으로만 닫기
+        if (selectedImageIndex != null && overlayImages.isNotEmpty()) {
+            val pagerState = rememberPagerState(
+                initialPage = selectedImageIndex!!.coerceIn(0, overlayImages.lastIndex)
+            ) { overlayImages.size }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.92f))
-                    .clickable { selectedImageUrl = null }
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(url)
-                        .crossfade(true)
-                        .size(Size.ORIGINAL)
-                        .build(),
-                    contentDescription = "확대 이미지",
-                    contentScale = ContentScale.Fit,
+                HorizontalPager(
+                    state = pagerState,
                     modifier = Modifier.fillMaxSize()
-                )
+                ) { page ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(overlayImages[page])
+                            .crossfade(true)
+                            .size(Size.ORIGINAL)
+                            .build(),
+                        contentDescription = "확대 이미지 ${page + 1}",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
                 IconButton(
-                    onClick = { selectedImageUrl = null },
+                    onClick = { selectedImageIndex = null },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(16.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "닫기",
-                        tint = Color.White
+                    Icon(Icons.Default.Close, contentDescription = "닫기", tint = Color.White)
+                }
+
+                // Design Ref: joyary-upgrade-v7 §3.3 — 이미지 2장 이상일 때 인디케이터 (FR-02)
+                if (overlayImages.size > 1) {
+                    Text(
+                        text = "${pagerState.currentPage + 1} / ${overlayImages.size}",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 24.dp)
                     )
                 }
             }
@@ -274,12 +295,12 @@ private fun EmptyDiaryPage(
     }
 }
 
-// 기존 일기 상세 콘텐츠 — onImageClick 콜백으로 상태 호이스팅
+// 기존 일기 상세 콘텐츠 — onImageClick(index) 콜백으로 인덱스 전달 (joyary-upgrade-v7)
 @Composable
 private fun DiaryEntryContent(
     entry: DiaryEntry,
     modifier: Modifier = Modifier,
-    onImageClick: (String) -> Unit = {}
+    onImageClick: (Int) -> Unit = {}
 ) {
     Column(
         modifier = modifier.verticalScroll(rememberScrollState())
@@ -293,7 +314,8 @@ private fun DiaryEntryContent(
                     .fillMaxWidth()
                     .padding(vertical = 12.dp)
             ) {
-                items(entry.imageUrls) { url ->
+                // Design Ref: joyary-upgrade-v7 §3.2 — itemsIndexed로 인덱스 전달 (FR-01)
+                itemsIndexed(entry.imageUrls) { index, url ->
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(url)
@@ -306,7 +328,7 @@ private fun DiaryEntryContent(
                             .height(220.dp)
                             .width(if (entry.imageUrls.size == 1) 340.dp else 260.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { onImageClick(url) }
+                            .clickable { onImageClick(index) }
                     )
                 }
             }

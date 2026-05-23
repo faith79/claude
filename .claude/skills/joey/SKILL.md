@@ -1,14 +1,15 @@
 ---
 name: joey
 classification: workflow
-classification-reason: Full-auto PDCA pipeline — runs plan→design→do→analyze→report without user confirmations
+classification-reason: Quality-gated full-auto PDCA pipeline with configurable match-rate threshold and audit trail
 deprecation-risk: none
 effort: high
 description: |
-  Auto-pilot PDCA pipeline. Runs plan→design→do→analyze→report sequentially,
-  auto-selecting recommended options at every checkpoint. No user confirmations needed.
-  Triggers: /joey, joey, 자동 PDCA, 풀 파이프라인, auto pipeline.
-argument-hint: "<feature-request>"
+  Full-auto PDCA pipeline with user-defined quality gate. Runs plan→design→do→analyze→report
+  sequentially. Iterates the analyze→fix loop until match rate reaches the target threshold.
+  First argument is optional target % (default 90). No user confirmations at any checkpoint.
+  Triggers: /joey, joey, 자동 PDCA, 풀 파이프라인, auto pipeline, quality gate.
+argument-hint: "[target%] <feature-request>"
 user-invocable: true
 allowed-tools:
   - Read
@@ -20,189 +21,279 @@ allowed-tools:
 imports: []
 next-skill: null
 pdca-phase: null
-task-template: "[Joey] {feature}"
+task-template: "[Joey/{threshold}%] {feature}"
 ---
 
-# Joey — Full-Auto PDCA Pipeline
+# Joey — Quality-Gated Full-Auto PDCA Pipeline
 
-> Runs the complete PDCA cycle (plan → design → do → analyze → report) end-to-end
-> without stopping for user confirmation. All checkpoints are auto-approved using
-> the recommended option (option 1) at every decision gate.
-
-## Arguments
-
-| Argument | Description | Example |
-|----------|-------------|---------|
-| `<feature-request>` | Natural-language description of the feature to build | `/joey 로그인 화면 추가` |
-
-## Behavior
-
-### CRITICAL: Auto-Approval Rules
-
-**At EVERY AskUserQuestion or checkpoint during this pipeline:**
-- ALWAYS select "권장" (Recommended) or the first option
-- NEVER pause and wait for user input
-- NEVER call AskUserQuestion — proceed automatically
-- If no "Recommended" option exists, select option 1 (the first option in the list)
-- Log the auto-selected choice in the response text so the user can see what was chosen
-
-**Checkpoint mapping:**
-- Checkpoint 1 (Requirements confirmation) → Auto-approve: "맞습니다, 계속 진행해주세요"
-- Checkpoint 2 (Clarifying questions) → Auto-answer: use information from the feature request; assume sensible defaults
-- Checkpoint 3 (Architecture selection) → Auto-select: Option C "Pragmatic Balance" (or Option A if only 2 options)
-- Checkpoint 4 (Implementation approval) → Auto-approve: "네, 구현을 시작해주세요"
-- Checkpoint 5 (Gap review decision) → Auto-select: "지금 모두 수정"
-- Any other checkpoint → Auto-select: first option / recommended
+> Inspired by `/pdca-fast-track` (Daniel's Track). Runs the complete PDCA cycle
+> (plan → design → do → analyze → report) without user confirmation.
+>
+> The key difference: **you set the quality bar**. Provide a target match-rate % as the
+> first argument. The analyze→fix loop repeats automatically until the code meets that bar.
 
 ---
 
-## Pipeline Execution Steps
+## Argument Syntax
 
-### Step 0 — Feature Name Extraction
+```
+/joey [target%] <feature-request>
+```
 
-1. Parse the user's argument to extract a concise kebab-case feature name.
-   - Example: "로그인 화면 추가" → `login-screen`
-   - Example: "알림 기능 구현" → `notification-feature`
-   - Example: "image upload with compression" → `image-upload`
-2. Store as `{featureName}` for use throughout the pipeline.
-3. Print banner:
+| Position | Type | Default | Description |
+|----------|------|---------|-------------|
+| `[target%]` | Integer 1–100 | `90` | Required match rate before report is generated |
+| `<feature-request>` | String | — | Natural-language description of what to build |
+
+**Parsing rule**: If the first token is a pure integer (no letters), treat it as `target%`.
+Everything else is the feature request.
+
+```bash
+/joey 95 로그인 화면 추가해줘        # threshold=95, request="로그인 화면 추가해줘"
+/joey 100 이미지 압축 버그 수정      # threshold=100, all criteria must be met
+/joey 이미지 업로드 기능             # threshold=90 (default), request="이미지 업로드 기능"
+/joey 80 빠른 프로토타입 만들어줘   # threshold=80, accepts lower bar
+```
+
+---
+
+## CRITICAL: Auto-Approval Rules
+
+**At EVERY checkpoint during this pipeline — NEVER pause:**
+- Select "권장" (Recommended) or the first option automatically
+- NEVER call AskUserQuestion
+- Log the auto-selected choice inline so the user can audit decisions
+
+**Checkpoint auto-map:**
+
+| Checkpoint | Auto-decision |
+|-----------|---------------|
+| CP-1 Requirements confirmation | "[Auto-approve] 요구사항 확인됨" |
+| CP-2 Clarifying questions | "[Auto-approve] 합리적 기본값 적용" |
+| CP-3 Architecture selection | "[Auto-select] Option C — Pragmatic Balance" |
+| CP-4 Implementation approval | "[Auto-approve] 구현 범위 확정" |
+| CP-5 Gap review | "[Auto-select] 지금 모두 수정" (if below threshold) |
+| Any other | "[Auto-select] 첫 번째 옵션 선택" |
+
+---
+
+## Pipeline Steps
+
+### Step 0 — Argument Parsing & Precondition Check
+
+1. **Parse arguments:**
+   - If first token is a pure integer N (e.g., `95`): `threshold = N`, `request = remaining text`
+   - Otherwise: `threshold = 90`, `request = full argument`
+   - Clamp threshold: `threshold = max(1, min(100, threshold))`
+
+2. **Extract feature name** — kebab-case slug from request:
+   - "로그인 화면 추가해줘" → `login-screen`
+   - "이미지 압축 버그 수정" → `image-compression-fix`
+   - "Add push notification support" → `push-notification`
+
+3. **Initialize session log** — write to `.bkit/runtime/joey-log.json`:
+   ```json
+   {
+     "feature": "<featureName>",
+     "threshold": <N>,
+     "startedAt": "<ISO timestamp>",
+     "decisions": [],
+     "iterations": [],
+     "finalMatchRate": null,
+     "status": "running"
+   }
    ```
-   ╔═══════════════════════════════════════════════════════╗
-   ║  🤖 Joey Auto-PDCA Pipeline                          ║
-   ║  Feature: {featureName}                              ║
-   ║  Mode: Full-Auto (no confirmations)                  ║
-   ╚═══════════════════════════════════════════════════════╝
+
+4. **Print banner:**
+   ```
+   ╔══════════════════════════════════════════════════════════╗
+   ║  Joey Auto-PDCA  |  Quality Gate: {threshold}%          ║
+   ║  Feature: {featureName}                                 ║
+   ║  Mode: Full-Auto — no confirmations                     ║
+   ╚══════════════════════════════════════════════════════════╝
    ```
 
 ---
 
 ### Step 1 — PLAN Phase
 
-**Invoke:** `/pdca plan {featureName}` with the full feature request as context.
+1. Check if `docs/00-pm/{featureName}.prd.md` exists → read as context if found
+2. Generate Plan document WITHOUT pausing at CP-1 or CP-2
+3. Auto-log each bypassed checkpoint:
+   ```
+   [CP-1 Auto] 요구사항 확인됨 → 계속 진행
+   [CP-2 Auto] 명확화 질문 생략 → 합리적 기본값 적용
+   ```
+4. Write Plan to `docs/01-plan/features/{featureName}.plan.md`
+5. Generate Context Anchor (WHY/WHO/RISK/SUCCESS/SCOPE) and embed
+6. Append to session log `decisions[]`: `{checkpoint: 1, decision: "auto-approve", reason: "joey-mode"}`
 
-**Auto-approval behavior:**
-- Read `templates/plan.template.md` to understand the template structure
-- Check `docs/00-pm/{featureName}.prd.md` for PRD context (use if exists)
-- Generate the Plan document WITHOUT pausing at Checkpoint 1 or Checkpoint 2
-- At Checkpoint 1: print "[Auto-approve] 요구사항 확인됨 — 계속 진행" and proceed
-- At Checkpoint 2: print "[Auto-approve] 명확화 질문 생략 — 합리적 기본값 적용" and proceed
-- Write the Plan document to `docs/01-plan/features/{featureName}.plan.md`
-- Generate Context Anchor (WHY/WHO/RISK/SUCCESS/SCOPE) and embed in the Plan
-
-**Output:** Plan document at `docs/01-plan/features/{featureName}.plan.md`
-
-**Progress indicator:**
+**Progress:**
 ```
-[1/5] PLAN ✅ — docs/01-plan/features/{featureName}.plan.md
+[1/5] PLAN ✅  {featureName}.plan.md
+      Threshold: {threshold}% | Decisions auto-approved: CP-1, CP-2
 ```
 
 ---
 
 ### Step 2 — DESIGN Phase
 
-**Invoke:** `/pdca design {featureName}` using the Plan document just created.
+1. Read Plan document fully
+2. Generate 3 architecture options (A: Minimal, B: Clean, C: Pragmatic Balance)
+3. Auto-select **Option C** (or Option A if only 2 options exist):
+   ```
+   [CP-3 Auto] Option C — Pragmatic Balance 선택됨
+   ```
+4. Write Design to `docs/02-design/features/{featureName}.design.md`
+5. Append to session log: `{checkpoint: 3, decision: "option-c", reason: "pragmatic-default"}`
 
-**Auto-approval behavior:**
-- Read the Plan document fully
-- Generate 3 architecture options (A: Minimal, B: Clean, C: Pragmatic)
-- At Checkpoint 3: print "[Auto-select] Option C — Pragmatic Balance 선택됨" and proceed
-- If only 2 options exist: auto-select Option A
-- Write the Design document to `docs/02-design/features/{featureName}.design.md`
-- Generate Session Guide in §11.3 if multiple modules identified
-
-**Output:** Design document at `docs/02-design/features/{featureName}.design.md`
-
-**Progress indicator:**
+**Progress:**
 ```
-[2/5] DESIGN ✅ — docs/02-design/features/{featureName}.design.md
+[2/5] DESIGN ✅  {featureName}.design.md
+      Architecture: Option C (Pragmatic Balance) | CP-3 auto-selected
 ```
 
 ---
 
 ### Step 3 — DO Phase (Implementation)
 
-**Invoke:** `/pdca do {featureName}` using the Design document just created.
+1. Read Design document **in full** (do not skip sections)
+2. Load full upstream chain: PRD → Plan → Design
+3. Auto-approve implementation scope:
+   ```
+   [CP-4 Auto] 구현 범위 확정 — 즉시 시작
+   ```
+4. Implement ALL code changes from Design (no --scope filtering)
+5. Add `// Design Ref: §{section}` comments for key decisions
+6. Append to session log: `{checkpoint: 4, decision: "auto-approve", filesChanged: N}`
 
-**Auto-approval behavior:**
-- Read Design document fully (all sections)
-- Load full upstream context: PRD → Plan → Design
-- Display Decision Record Chain
-- Display Success Criteria checklist
-- At Checkpoint 4: print "[Auto-approve] 구현 범위 승인 — 즉시 시작" and proceed
-- Implement ALL code changes specified in the Design document
-- Add Design Ref comments as specified in the DO phase rules
-- Implement the full scope (no --scope filtering)
-
-**Output:** All code files modified/created as specified in Design
-
-**Progress indicator:**
+**Progress:**
 ```
-[3/5] DO ✅ — {N} files modified, {M} files created
+[3/5] DO ✅  {N} files modified, {M} files created
+      CP-4 auto-approved | Design Ref comments added
 ```
 
 ---
 
-### Step 4 — ANALYZE Phase (Check)
+### Step 4 — ANALYZE Phase (Quality-Gated Iteration Loop)
 
-**Invoke:** `/pdca analyze {featureName}` to run gap analysis.
+This is the core quality gate. The loop runs until match rate ≥ `{threshold}` or max iterations reached.
 
-**Auto-approval behavior:**
-- Load full upstream context: PRD → Plan → Design → Implementation
-- Run static gap analysis (Structural + Functional + Contract)
-- Calculate Match Rate
-- At Checkpoint 5:
-  - If Match Rate < 90%: print "[Auto-select] 지금 모두 수정 선택됨" → fix ALL gaps → re-analyze
-  - If Match Rate ≥ 90%: print "[Auto-approve] Match Rate {X}% — 기준 충족, 다음 단계로 진행"
-- Write analysis to `docs/03-analysis/{featureName}.analysis.md`
+#### Iteration Loop
 
-**Auto-iteration rules:**
-- Maximum 3 iteration rounds (fix → analyze → check)
-- Each round: fix all identified gaps, then re-run static analysis
-- Stop when Match Rate ≥ 90% or 3 rounds exhausted
-- If still < 90% after 3 rounds: proceed to report with a warning note
-
-**Progress indicator:**
 ```
-[4/5] ANALYZE ✅ — Match Rate: {X}% (after {N} iteration(s))
+iteration = 0
+maxIterations = 5
+
+LOOP:
+  iteration += 1
+  
+  Run static gap analysis (Structural + Functional + Contract axes):
+    - Structural: file existence, route coverage, component list
+    - Functional: logic completeness, placeholder detection, UI checklist
+    - Contract: API type consistency, callback signatures, state flow
+  
+  Calculate matchRate:
+    Overall = (Structural × 0.2) + (Functional × 0.4) + (Contract × 0.4)
+  
+  Append to session log iterations[]:
+    { iteration, matchRate, gaps: [...], fixedAt: ISO }
+  
+  Print progress:
+    [Iter {iteration}/{maxIterations}] Match Rate: {matchRate}% (target: {threshold}%)
+  
+  IF matchRate >= threshold:
+    Print "[Quality Gate PASSED] {matchRate}% ≥ {threshold}% — 기준 충족"
+    BREAK → proceed to Step 5
+  
+  IF iteration >= maxIterations:
+    Print "[Max Iterations] {maxIterations}회 완료. 현재 {matchRate}% (목표 {threshold}%)"
+    Print "⚠️  목표 미달 — 리포트에 미해결 항목 기록 후 진행"
+    BREAK → proceed to Step 5 with warning
+  
+  Auto-select CP-5: "[CP-5 Auto] 지금 모두 수정 선택됨"
+  Fix ALL identified gaps:
+    - For each gap: read affected file → apply minimal targeted fix
+    - Do NOT refactor unrelated code
+  
+  CONTINUE LOOP
+```
+
+**Write final analysis to:** `docs/03-analysis/{featureName}.analysis.md`
+
+**Progress:**
+```
+[4/5] ANALYZE ✅  Match Rate: {matchRate}% (target: {threshold}%)
+      Iterations: {N} | Gaps fixed: {M} | Status: PASSED / WARNING
 ```
 
 ---
 
 ### Step 5 — REPORT Phase
 
-**Invoke:** `/pdca report {featureName}` to generate the completion report.
+1. Load ALL upstream documents: PRD → Plan → Design → Analysis
+2. Generate completion report
+3. If report reveals remaining unresolved issues → fix them, update analysis, regenerate
+4. Finalize session log:
+   ```json
+   {
+     "finalMatchRate": <matchRate>,
+     "status": "completed" | "completed-with-warning",
+     "completedAt": "<ISO timestamp>"
+   }
+   ```
+5. Write report to `docs/04-report/features/{featureName}.report.md`
+6. Update `.bkit/state/pdca-status.json` → phase = "completed"
 
-**Auto-approval behavior:**
-- Load ALL upstream documents: PRD → Plan → Design → Analysis
-- Generate comprehensive completion report
-- If report identifies remaining issues: auto-fix them, then regenerate
-- Write report to `docs/04-report/features/{featureName}.report.md`
-- Update `.bkit/state/pdca-status.json` to phase = "completed"
-
-**Output:** Report at `docs/04-report/features/{featureName}.report.md`
-
-**Progress indicator:**
+**Progress:**
 ```
-[5/5] REPORT ✅ — docs/04-report/features/{featureName}.report.md
+[5/5] REPORT ✅  {featureName}.report.md
 ```
 
 ---
 
 ### Final Summary
 
-After all 5 steps complete, print:
-
 ```
-╔═══════════════════════════════════════════════════════════════╗
-║  ✅ Joey Pipeline Complete!                                   ║
-╠═══════════════════════════════════════════════════════════════╣
-║  Feature:     {featureName}                                  ║
-║  Match Rate:  {X}%                                           ║
-║  Iterations:  {N}                                            ╠═══════════════════════════════════════════════════════════════╣
-║  Plan:    docs/01-plan/features/{featureName}.plan.md        ║
-║  Design:  docs/02-design/features/{featureName}.design.md   ║
-║  Report:  docs/04-report/features/{featureName}.report.md   ║
-╚═══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════╗
+║  Joey Pipeline Complete!                                        ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Feature:       {featureName}                                   ║
+║  Target:        {threshold}%   Actual: {finalMatchRate}%        ║
+║  Status:        PASSED ✅  /  WARNING ⚠️                        ║
+║  Iterations:    {N} / {maxIterations}                           ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Plan:    docs/01-plan/features/{featureName}.plan.md           ║
+║  Design:  docs/02-design/features/{featureName}.design.md      ║
+║  Report:  docs/04-report/features/{featureName}.report.md      ║
+║  Log:     .bkit/runtime/joey-log.json                          ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## Session Log Schema (`.bkit/runtime/joey-log.json`)
+
+```json
+{
+  "feature": "login-screen",
+  "threshold": 95,
+  "startedAt": "2026-05-23T10:00:00.000Z",
+  "completedAt": "2026-05-23T10:42:00.000Z",
+  "decisions": [
+    { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
+    { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
+    { "checkpoint": 3, "decision": "option-c",     "reason": "pragmatic-default" },
+    { "checkpoint": 4, "decision": "auto-approve",  "filesChanged": 4 },
+    { "checkpoint": 5, "decision": "fix-all",       "iteration": 1 }
+  ],
+  "iterations": [
+    { "iteration": 1, "matchRate": 82, "gapsFound": 3, "gapsFixed": 3 },
+    { "iteration": 2, "matchRate": 96, "gapsFound": 0, "gapsFixed": 0 }
+  ],
+  "finalMatchRate": 96,
+  "status": "completed"
+}
 ```
 
 ---
@@ -211,30 +302,40 @@ After all 5 steps complete, print:
 
 | Situation | Action |
 |-----------|--------|
-| Plan template missing | Use built-in plan structure; continue |
-| Design template missing | Use built-in design structure; continue |
-| Code compilation error | Fix the error automatically; do NOT stop the pipeline |
-| Match Rate < 90% after 3 iterations | Proceed to report with note: "수동 검토 필요한 항목이 있습니다" |
-| File write error | Retry once; if fails, report the error and stop |
+| threshold out of range | Clamp to [1, 100]; log warning |
+| Plan template missing | Use built-in structure; continue |
+| Design template missing | Use built-in structure; continue |
+| Code error introduced by fix | Revert that fix; mark gap as "manual-required"; continue |
+| matchRate < threshold after 5 iterations | Proceed with ⚠️ warning; list unresolved gaps in report |
+| File write error | Retry once; if fails, report error and stop |
+
+---
+
+## Quality Gate Reference
+
+| threshold | When to use |
+|-----------|------------|
+| `80` | 빠른 프로토타입 — 대략적 동작 확인 |
+| `90` | 기본값 — 일반 기능 개발 (권장) |
+| `95` | 중요 기능 — 결제, 인증 등 |
+| `100` | 완전 검증 — 모든 SC 충족 필수 |
+
+---
 
 ## Examples
 
 ```bash
-# Full auto pipeline for a new feature
-/joey 로그인 화면 추가해줘
+# 기본 품질 기준 (90%)
+/joey 조이어리 앱에 다크모드 추가
 
-# English request works too
-/joey Add push notification support for daily reminders
+# 95% 기준 — 중요 기능
+/joey 95 로그인 화면 추가해줘
 
-# Complex multi-part request
-/joey 이미지 업로드 기능: 100KB 압축, EXIF 회전 보정, 갤러리 표시
+# 100% 기준 — 모든 항목 충족 필수
+/joey 100 이미지 압축 버그 수정
+
+# 낮은 기준 — 빠른 프로토타입
+/joey 80 간단한 설정 화면 추가
 ```
-
-## Important Notes
-
-- This skill bypasses ALL user confirmation gates. Use when you trust the AI to make reasonable architectural decisions.
-- If you need to review decisions at any step, use `/pdca plan`, `/pdca design`, etc. individually instead.
-- The generated code follows the project's existing conventions and design patterns.
-- All auto-selected choices are logged in the response so you can audit the decisions made.
 
 ARGUMENTS:
