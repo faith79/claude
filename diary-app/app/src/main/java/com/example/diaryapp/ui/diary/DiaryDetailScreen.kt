@@ -1,6 +1,8 @@
 package com.example.diaryapp.ui.diary
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -11,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -18,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -35,7 +39,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 // Design Ref: §5.3 — HorizontalPager 날짜 스와이프 ±365일 (FR-09,FR-10)
-// Design Ref: §5.5 — Coil EXIF 회전 보정 Size.ORIGINAL (FR-11)
+// Design Ref: joyary-upgrade-v6 §5.2 — 날짜+요일 (FR-03), §5.5 — 이미지 확대 레이어 (FR-08, FR-09)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DiaryDetailScreen(
@@ -74,7 +78,6 @@ fun DiaryDetailScreen(
 
     fun pageToDate(page: Int): LocalDate = baseDate.plusDays((page - INITIAL_PAGE).toLong())
 
-    // 현재 보이는 페이지의 날짜에 맞는 일기 로드
     LaunchedEffect(pagerState.settledPage, userId) {
         val targetDate = pageToDate(pagerState.settledPage).format(DateTimeFormatter.ISO_LOCAL_DATE)
         diaryViewModel.loadDiaryByDate(userId, targetDate)
@@ -98,14 +101,12 @@ fun DiaryDetailScreen(
             val targetDateStr = targetDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
             val isCurrentPage = page == pagerState.settledPage
-            // settled 페이지의 entry만 유효 — 다른 페이지는 null 처리
             val pageEntry = if (isCurrentPage) entry else null
 
             DiaryPageContent(
                 date = targetDateStr,
                 entry = pageEntry,
                 isCurrentPage = isCurrentPage,
-                // G-01 fix: 로딩 중에는 EmptyDiaryPage 대신 CircularProgressIndicator 표시
                 isDetailLoading = isCurrentPage && isDetailLoading,
                 onEdit = onEdit,
                 onBack = onBack,
@@ -116,7 +117,20 @@ fun DiaryDetailScreen(
     }
 }
 
+// Design Ref: joyary-upgrade-v6 §5.2 — 날짜+요일 포맷 (FR-03)
+private fun formatDateWithDay(dateStr: String): String {
+    return try {
+        val date = LocalDate.parse(dateStr)
+        val dayNames = listOf("월", "화", "수", "목", "금", "토", "일")
+        val dayName = dayNames[date.dayOfWeek.value - 1]
+        "$dateStr ($dayName)"
+    } catch (e: Exception) {
+        dateStr
+    }
+}
+
 // Design Ref: §5.3 — 일기 있는 날: 기존 상세 UI / 없는 날: EmptyDiaryPage (FR-09, FR-10)
+// G-01 fix: selectedImageUrl 상태를 DiaryPageContent로 호이스팅 — overlay가 TopAppBar까지 커버
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DiaryPageContent(
@@ -130,50 +144,87 @@ private fun DiaryPageContent(
     onAddDiary: (String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    // G-01 fix: 상태를 여기서 관리해 overlay가 Scaffold 위를 덮도록 함
+    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(date) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로")
-                    }
-                },
-                actions = {
-                    entry?.let { e ->
-                        IconButton(onClick = { onEdit(date, e.id) }) {
-                            Icon(Icons.Default.Edit, "수정")
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    // Design Ref: joyary-upgrade-v6 §5.2 — 날짜 옆 요일 표시 (FR-03)
+                    title = { Text(formatDateWithDay(date)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로")
                         }
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, "삭제")
+                    },
+                    actions = {
+                        entry?.let { e ->
+                            IconButton(onClick = { onEdit(date, e.id) }) {
+                                Icon(Icons.Default.Edit, "수정")
+                            }
+                            IconButton(onClick = { showDeleteDialog = true }) {
+                                Icon(Icons.Default.Delete, "삭제")
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
+        ) { padding ->
+            if (!isCurrentPage || isDetailLoading) {
+                Box(
+                    Modifier.fillMaxSize().padding(padding),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+                return@Scaffold
+            }
+
+            if (entry == null) {
+                EmptyDiaryPage(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    onAddDiary = { onAddDiary(date) }
+                )
+            } else {
+                DiaryEntryContent(
+                    entry = entry,
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    onImageClick = { url -> selectedImageUrl = url }
+                )
+            }
         }
-    ) { padding ->
-        if (!isCurrentPage || isDetailLoading) {
-            // G-01 fix: 스와이프 중이거나 로딩 중인 페이지는 인디케이터 표시 (EmptyDiaryPage 오표시 방지)
+
+        // G-01 fix: Scaffold의 형제 요소로 배치 → TopAppBar를 포함한 전체 화면 커버
+        // Design Ref: joyary-upgrade-v6 §5.5 — 이미지 전체화면 오버레이 + X버튼 (FR-08, FR-09)
+        selectedImageUrl?.let { url ->
             Box(
-                Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
-            return@Scaffold
-        }
-
-        if (entry == null) {
-            // Plan SC: FR-10 — 일기 없는 날 빈 화면 + 작성 버튼 (로딩 완료 후에만 표시)
-            EmptyDiaryPage(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                onAddDiary = { onAddDiary(date) }
-            )
-        } else {
-            // 기존 일기 상세 UI
-            DiaryEntryContent(
-                entry = entry,
-                modifier = Modifier.fillMaxSize().padding(padding)
-            )
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.92f))
+                    .clickable { selectedImageUrl = null }
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(url)
+                        .crossfade(true)
+                        .size(Size.ORIGINAL)
+                        .build(),
+                    contentDescription = "확대 이미지",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+                IconButton(
+                    onClick = { selectedImageUrl = null },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "닫기",
+                        tint = Color.White
+                    )
+                }
+            }
         }
     }
 
@@ -223,11 +274,12 @@ private fun EmptyDiaryPage(
     }
 }
 
-// 기존 일기 상세 콘텐츠
+// 기존 일기 상세 콘텐츠 — onImageClick 콜백으로 상태 호이스팅
 @Composable
 private fun DiaryEntryContent(
     entry: DiaryEntry,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onImageClick: (String) -> Unit = {}
 ) {
     Column(
         modifier = modifier.verticalScroll(rememberScrollState())
@@ -254,6 +306,7 @@ private fun DiaryEntryContent(
                             .height(220.dp)
                             .width(if (entry.imageUrls.size == 1) 340.dp else 260.dp)
                             .clip(RoundedCornerShape(12.dp))
+                            .clickable { onImageClick(url) }
                     )
                 }
             }

@@ -4,7 +4,7 @@
             "outputFile": "com.example.diaryapp-mergeDebugResources-72:/values-v23/values-v23.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\JOEY\\.gradle\\caches\\9.4.1\\transforms\\3a3975c6a6f3e7507de4f75d447dff83\\transformed\\work-runtime-2.9.0\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\Users\\JOEY\\.gradle\\caches\\9.4.1\\transforms\\876370c29e07f91baa2348921e50778f\\transformed\\work-runtime-2.9.0\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -14,7 +14,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\JOEY\\.gradle\\caches\\9.4.1\\transforms\\ccda822d328957ae13a74688580bf0a4\\transformed\\appcompat-1.6.1\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\Users\\JOEY\\.gradle\\caches\\9.4.1\\transforms\\d14bb7c1a78dd8b334d83790afd2ee18\\transformed\\appcompat-1.6.1\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,20,34,35,36,39,43,44,45,46",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4",

@@ -52,16 +52,29 @@ class DiaryViewModel @Inject constructor(
     private val _currentMonth = MutableStateFlow(YearMonth.now())
     val currentMonth: StateFlow<YearMonth> = _currentMonth.asStateFlow()
 
+    // Design Ref: joyary-upgrade-v6 §5.3 — 인메모리 캐시 (FR-04, FR-05)
+    // Key: "userId_yearMonth" (예: "abc_2026-05"), Value: 해당 월 일기 목록
+    private val monthCache = mutableMapOf<String, List<DiaryEntry>>()
+    // Key: "userId_date" (예: "abc_2026-05-23"), Value: 해당 날짜 일기 (없으면 null 저장)
+    private val entryCache = mutableMapOf<String, DiaryEntry?>()
+
     // Plan SC: SC-04 Upsert — 해당 날짜 일기 존재 여부 반환
     suspend fun getEntryByDate(userId: String, date: String): DiaryEntry? =
         diaryRepository.getDiaryByDate(userId, date)
 
     fun loadMonth(userId: String, yearMonth: YearMonth) {
         _currentMonth.value = yearMonth
+        val key = "${userId}_${yearMonth}"
+        // Design Ref: joyary-upgrade-v6 §5.3 — 캐시 히트 시 즉시 반환 (FR-04)
+        monthCache[key]?.let { cached ->
+            _diaries.value = cached
+            return
+        }
         viewModelScope.launch {
             try {
-                diaryRepository.getDiariesByMonth(userId, yearMonth).collect {
-                    _diaries.value = it
+                diaryRepository.getDiariesByMonth(userId, yearMonth).collect { list ->
+                    monthCache[key] = list
+                    _diaries.value = list
                 }
             } catch (e: Exception) {
                 _uiState.value = DiaryUiState.Error(e.message ?: "데이터 로드 실패")
@@ -70,9 +83,17 @@ class DiaryViewModel @Inject constructor(
     }
 
     fun loadDiaryByDate(userId: String, date: String) {
+        val key = "${userId}_${date}"
+        // Design Ref: joyary-upgrade-v6 §5.3 — 캐시 히트 시 즉시 반환 (FR-05)
+        if (entryCache.containsKey(key)) {
+            _selectedEntry.value = entryCache[key]
+            return
+        }
         viewModelScope.launch {
             _isDetailLoading.value = true
-            _selectedEntry.value = diaryRepository.getDiaryByDate(userId, date)
+            val result = diaryRepository.getDiaryByDate(userId, date)
+            entryCache[key] = result
+            _selectedEntry.value = result
             _isDetailLoading.value = false
         }
     }
@@ -117,7 +138,6 @@ class DiaryViewModel @Inject constructor(
 
                 if (existingId.isEmpty()) {
                     val newId = diaryRepository.saveDiary(entry).getOrThrow()
-                    // 업로드된 URL이 있으면 실제 diaryId로 재저장 불필요 (URL은 이미 확정)
                     if (finalUrls.isNotEmpty()) {
                         diaryRepository.updateDiary(entry.copy(id = newId)).getOrThrow()
                     }
@@ -125,6 +145,8 @@ class DiaryViewModel @Inject constructor(
                     diaryRepository.updateDiary(entry).getOrThrow()
                 }
             }.onSuccess {
+                // Design Ref: joyary-upgrade-v6 §5.3 — 저장 성공 시 캐시 무효화 (FR-06)
+                invalidateCache(userId, date)
                 _uiState.value = DiaryUiState.Success
             }.onFailure {
                 _uiState.value = DiaryUiState.Error(it.message ?: "저장 실패")
@@ -139,7 +161,11 @@ class DiaryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = DiaryUiState.Loading
             diaryRepository.deleteDiaryWithImages(entry)
-                .onSuccess { _uiState.value = DiaryUiState.Success }
+                .onSuccess {
+                    // Design Ref: joyary-upgrade-v6 §5.3 — 삭제 성공 시 캐시 무효화 (FR-06)
+                    invalidateCache(entry.userId, entry.date)
+                    _uiState.value = DiaryUiState.Success
+                }
                 .onFailure { _uiState.value = DiaryUiState.Error(it.message ?: "삭제 실패") }
         }
     }
@@ -159,6 +185,13 @@ class DiaryViewModel @Inject constructor(
         viewModelScope.launch {
             _searchResults.value = diaryRepository.searchDiaries(userId, query)
         }
+    }
+
+    // Design Ref: joyary-upgrade-v6 §5.3 — 해당 날짜 + 해당 월 캐시 무효화 (FR-06)
+    private fun invalidateCache(userId: String, date: String) {
+        val yearMonth = date.substring(0, 7)  // "YYYY-MM"
+        monthCache.remove("${userId}_${yearMonth}")
+        entryCache.remove("${userId}_${date}")
     }
 
     fun resetState() { _uiState.value = DiaryUiState.Idle }

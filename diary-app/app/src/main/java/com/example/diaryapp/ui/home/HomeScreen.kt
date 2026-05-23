@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,6 +41,7 @@ import kotlinx.coroutines.launch
 
 // Design Ref: §5.1 — 달력 상단 고정 레이아웃 (FR-02), HorizontalPager 월 스와이프 유지
 // Plan SC: SC-04 — FAB Upsert, SC-06 — 월 스와이프
+// G-02 fix: joyary-upgrade-v6 — 검색 버튼 제거에 따른 Dead Code 일괄 삭제
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -55,11 +55,6 @@ fun HomeScreen(
 ) {
     val userId = authViewModel.currentUserId
     val diaries by diaryViewModel.diaries.collectAsStateWithLifecycle()
-    val searchResults by diaryViewModel.searchResults.collectAsStateWithLifecycle()
-
-    var searchQuery by remember { mutableStateOf("") }
-    var showSearch by remember { mutableStateOf(false) }
-
     val scope = rememberCoroutineScope()
 
     val BASE_YEAR = 2000
@@ -84,32 +79,15 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            if (showSearch) {
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChange = {
-                        searchQuery = it
-                        diaryViewModel.searchDiaries(userId, it)
-                    },
-                    onClose = {
-                        showSearch = false
-                        searchQuery = ""
-                        diaryViewModel.searchDiaries(userId, "")
+            // Design Ref: joyary-upgrade-v6 §FR-10 — 검색 버튼 제거
+            TopAppBar(
+                title = { Text("조이어리") },
+                actions = {
+                    IconButton(onClick = onSettings) {
+                        Icon(Icons.Default.Settings, "설정")
                     }
-                )
-            } else {
-                TopAppBar(
-                    title = { Text("조이어리") },
-                    actions = {
-                        IconButton(onClick = { showSearch = true }) {
-                            Icon(Icons.Default.Search, "검색")
-                        }
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.Default.Settings, "설정")
-                        }
-                    }
-                )
-            }
+                }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
@@ -133,103 +111,48 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (showSearch && searchQuery.isNotBlank()) {
-                SearchResultsList(
-                    results = searchResults,
-                    onItemClick = { onDateSelected(it.date) }
-                )
-            } else {
-                // 달력 카드 — 상단 고정 (weight 없음)
-                // Design Ref: joyary-upgrade-v3 §5.3 — LocalThemeColors.calendarBg 적용 (FR-01,FR-03)
-                val themeColors = LocalThemeColors.current
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = themeColors.calendarBg),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxWidth()
-                    ) { page ->
-                        val pageMonth = pageToYearMonth(page)
-                        Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                            CalendarHeader(
-                                currentMonth = pageMonth,
-                                onPrev = {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                    }
-                                },
-                                onNext = {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                    }
+            // 달력 카드 — 상단 고정 (weight 없음)
+            // Design Ref: joyary-upgrade-v3 §5.3 — LocalThemeColors.calendarBg 적용 (FR-01,FR-03)
+            val themeColors = LocalThemeColors.current
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = themeColors.calendarBg),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { page ->
+                    val pageMonth = pageToYearMonth(page)
+                    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                        CalendarHeader(
+                            currentMonth = pageMonth,
+                            onPrev = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
                                 }
-                            )
-                            CalendarGrid(
-                                yearMonth = pageMonth,
-                                diaryMap = diaryMap,
-                                onDateClick = { date ->
-                                    if (diaryMap.containsKey(date)) onDateSelected(date)
-                                    else onAddDiary(date)
+                            },
+                            onNext = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
                                 }
-                            )
-                        }
+                            }
+                        )
+                        CalendarGrid(
+                            yearMonth = pageMonth,
+                            diaryMap = diaryMap,
+                            onDateClick = { date ->
+                                if (diaryMap.containsKey(date)) onDateSelected(date)
+                                else onAddDiary(date)
+                            }
+                        )
                     }
                 }
-
-                // 달력 아래 여백 영역 (필요 시 추가 콘텐츠 배치 가능)
-                Box(modifier = Modifier.weight(1f))
             }
-        }
-    }
-}
 
-@Composable
-private fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onClose: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            placeholder = { Text("내용 검색...") },
-            modifier = Modifier.weight(1f),
-            singleLine = true
-        )
-        TextButton(onClick = onClose) { Text("취소") }
-    }
-}
-
-@Composable
-private fun SearchResultsList(
-    results: List<DiaryEntry>,
-    onItemClick: (DiaryEntry) -> Unit
-) {
-    if (results.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("검색 결과가 없습니다", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        return
-    }
-    Column {
-        results.forEach { entry ->
-            ListItem(
-                headlineContent = { Text(entry.content.take(30).ifBlank { "(내용 없음)" }) },
-                supportingContent = {
-                    Text(entry.date + if (entry.emotion != null) " ${entry.emotion.emoji}" else "")
-                },
-                modifier = Modifier.clickable { onItemClick(entry) }
-            )
-            HorizontalDivider()
+            // 달력 아래 여백 영역 (필요 시 추가 콘텐츠 배치 가능)
+            Box(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -365,11 +288,9 @@ private fun DayCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // 위: 감정 이모지 or 빈 동그라미 (FR-04, FR-05, FR-06)
         if (emotion != null) {
             Text(emotion.emoji, fontSize = 24.sp)
         } else {
-            // Plan SC: FR-06 — 일기 없는 날 빈 동그라미 (이모지 크기와 동일한 28dp)
             Box(
                 modifier = Modifier
                     .size(28.dp)
@@ -381,7 +302,6 @@ private fun DayCell(
             )
         }
         Spacer(Modifier.height(2.dp))
-        // 아래: 날짜 (FR-05)
         Text(
             text = day.toString(),
             fontSize = 13.sp,

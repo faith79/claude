@@ -1,9 +1,19 @@
 {
   "version": "3.0",
   "lastUpdated": "2026-05-04T14:09:54.694Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
-  "features": {},
+  "activeFeatures": ["joyary-upgrade-v6"],
+  "primaryFeature": "joyary-upgrade-v6",
+  "features": {
+    "joyary-upgrade-v6": {
+      "phase": "completed",
+      "startedAt": "2026-05-23T00:00:00.000Z",
+      "completedAt": "2026-05-23T00:00:00.000Z",
+      "matchRate": 100,
+      "iterationCount": 0,
+      "planPath": "docs/01-plan/features/joyary-upgrade-v6.plan.md",
+      "reportPath": "docs/04-report/features/joyary-upgrade-v6.report.md"
+    }
+  },
   "pipeline": {
     "currentPhase": 1,
     "level": "Dynamic",

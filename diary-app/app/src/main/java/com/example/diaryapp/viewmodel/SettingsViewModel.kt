@@ -14,6 +14,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -118,8 +120,17 @@ class SettingsViewModel @Inject constructor(
         _weekdayColor.value = Color(themePreferences.weekdayColor)
     }
 
+    // Design Ref: joyary-upgrade-v6 §5.6 — initialDelay로 설정 시간에 정확한 알림 (FR-11)
     private fun scheduleReminder() {
+        val hour = notificationPreferences.reminderHour
+        val minute = notificationPreferences.reminderMinute
+        val now = LocalDateTime.now()
+        val target = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
+        val nextTarget = if (target.isAfter(now)) target else target.plusDays(1)
+        val initialDelayMillis = ChronoUnit.MILLIS.between(now, nextTarget)
+
         val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
             .build()
         workManager.enqueueUniquePeriodicWork(
             "daily_reminder",

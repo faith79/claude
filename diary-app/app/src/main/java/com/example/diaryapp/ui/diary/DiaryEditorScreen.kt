@@ -111,10 +111,12 @@ fun DiaryEditorScreen(
                 )
             }
         ) { padding ->
+            // Design Ref: joyary-upgrade-v6 §5.4 — imePadding으로 키보드 출현 시 스크롤 확보 (FR-07)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .imePadding()
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
