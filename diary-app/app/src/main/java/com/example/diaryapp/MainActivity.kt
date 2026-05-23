@@ -30,13 +30,12 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val templateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
             val template = AppThemeTemplates.getOrElse(templateIndex) { AppThemeTemplates[0] }
-            val diaryBg by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
             val weekday by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
 
             DiaryAppTheme(colorScheme = template.colorScheme) {
                 CompositionLocalProvider(
                     LocalThemeColors provides template.themeColors.copy(
-                        diaryBg = diaryBg,
+                        diaryBg = template.themeColors.appBg,
                         weekdayColor = weekday
                     )
                 ) {

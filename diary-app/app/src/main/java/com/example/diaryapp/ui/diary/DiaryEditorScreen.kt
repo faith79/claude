@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -149,7 +150,11 @@ fun DiaryEditorScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 200.dp),
-                    maxLines = Int.MAX_VALUE
+                    maxLines = Int.MAX_VALUE,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF212121),
+                        unfocusedTextColor = Color(0xFF212121)
+                    )
                 )
 
                 Spacer(Modifier.height(16.dp))

@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.ui.theme.AppThemeTemplates
-import com.example.diaryapp.ui.theme.DiaryBgPalette
 import com.example.diaryapp.ui.theme.WeekdayColorPalette
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
@@ -40,8 +39,7 @@ fun SettingsScreen(
 
     // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex collect (FR-02~FR-05)
     val selectedTemplateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
-    // Design Ref: joyary-upgrade-v5 §3.1 — 일기 배경색 + 평일 글씨색 collect (FR-05, FR-06)
-    val diaryBgColor by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
+    // Design Ref: joyary-upgrade-v5 §3.1 — 평일 글씨색 collect (FR-06)
     val weekdayColor by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -130,15 +128,7 @@ fun SettingsScreen(
                         onSelect = settingsViewModel::selectTemplate
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    // Design Ref: joyary-upgrade-v5 §5.4 — 일기 배경색 팔레트 행 (FR-05)
-                    ColorPaletteRow(
-                        label = "일기 배경색",
-                        colors = DiaryBgPalette.colors,
-                        labels = DiaryBgPalette.labels,
-                        selectedColor = diaryBgColor,
-                        onColorSelected = settingsViewModel::setDiaryBgColor
-                    )
-                    Spacer(Modifier.height(12.dp))
+                    // Design Ref: joyary-diary-style-fix — 일기 배경색은 색상테마와 자동 연동 (테마 appBg 사용)
                     // Design Ref: joyary-upgrade-v5 §5.4 — 평일 글씨색 팔레트 행 (FR-06)
                     ColorPaletteRow(
                         label = "평일 글씨색",
