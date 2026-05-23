@@ -333,20 +333,44 @@ cd {androidProjectRoot}
 
 After Step 6 (regardless of APK build result), push all changes to git.
 
-#### 7-1. Stage and Commit
+#### 7-1. Get Current Branch
 
 ```bash
-git add -A
-git status
+git branch --show-current
 ```
 
-If nothing to commit:
+Store result as `{branch}`. If empty (detached HEAD), use `git rev-parse --abbrev-ref HEAD`.
+
+#### 7-2. Stage Source Files Only
+
+Stage only relevant source and document files. **Never use `git add -A`** — it includes build artifacts (build/, .gradle/, *.class, *.apk).
+
+Stage these path patterns:
+```bash
+git add \
+  "docs/**" \
+  ".bkit/runtime/joey-log.json" \
+  ".claude/skills/**" \
+  "*/src/**/*.kt" \
+  "*/src/**/*.java" \
+  "*/src/**/*.xml" \
+  "*/src/**/*.json" \
+  "CLAUDE.md"
+```
+
+Then check status:
+```bash
+git status --short
+```
+
+If nothing staged (no changes to source files):
 ```
 [Git] 변경사항 없음 — push 생략
 ```
 Log `gitStatus: "nothing-to-commit"` and finish.
 
-If there are changes:
+#### 7-3. Commit
+
 ```bash
 git commit -m "feat({featureName}): Joey auto-PDCA complete [{finalMatchRate}%]
 
@@ -358,10 +382,12 @@ git commit -m "feat({featureName}): Joey auto-PDCA complete [{finalMatchRate}%]
 Co-Authored-By: Joey Auto-PDCA <joey@bkit>"
 ```
 
-#### 7-2. Push
+#### 7-4. Push to Current Branch
+
+Always push explicitly to the current branch on `origin`:
 
 ```bash
-git push
+git push origin {branch}
 ```
 
 **On success:**
@@ -370,14 +396,28 @@ git push
 ```
 Log `gitStatus: "pushed"`, `gitBranch: "{branch}"`
 
-**On failure** (no remote, auth error, diverged branch):
-- Print the error
+**On failure — upstream not set:**
+```bash
+git push --set-upstream origin {branch}
+```
+If this succeeds, treat as success and log `gitStatus: "pushed-with-upstream"`.
+
+**On failure — diverged (non-fast-forward):**
+```bash
+git pull --rebase origin {branch}
+git push origin {branch}
+```
+If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
+
+**On any other failure:**
+- Print the error output
 - Print:
   ```
   [Git Push ⚠️] Push 실패. 아래를 확인해주세요:
-    - git remote -v        # 원격 저장소 연결 확인
-    - git push --set-upstream origin {branch}  # 브랜치 업스트림 설정
-    - git pull --rebase && git push            # 충돌 시
+    git remote -v                              # 원격 저장소 연결 확인
+    git push origin {branch}                  # 현재 브랜치로 직접 push
+    git push --set-upstream origin {branch}   # upstream 미설정 시
+    git pull --rebase origin {branch} && git push origin {branch}  # 충돌 시
   ```
 - Log `gitStatus: "failed"`, `gitError: "{error-summary}"`
 
