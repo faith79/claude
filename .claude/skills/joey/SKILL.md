@@ -7,7 +7,8 @@ effort: high
 description: |
   Full-auto PDCA pipeline with user-defined quality gate. Runs plan→design→do→analyze→report
   sequentially. Iterates the analyze→fix loop until match rate reaches the target threshold.
-  After report: builds Android debug APK, then pushes to git.
+  After report: pushes to git immediately, then builds Android debug APK.
+  APK build runs AFTER push so slow builds never block the commit.
   First argument is optional target % (default 90). No user confirmations at any checkpoint.
   Triggers: /joey, joey, 자동 PDCA, 풀 파이프라인, auto pipeline, quality gate.
 argument-hint: "[target%] <feature-request>"
@@ -254,86 +255,12 @@ LOOP:
 
 ---
 
-### Step 6 — Android Debug APK Build
+### Step 6 — Git Push
 
-After REPORT is complete, attempt to build the Android debug APK.
+> **Why first?** APK builds can take 1–5 minutes. Pushing source code immediately after
+> REPORT guarantees the commit lands even if the APK build fails or hangs.
 
-#### 6-1. Detect Android Project
-
-Search for Android project root (directory containing `gradlew` or `gradlew.bat`):
-```bash
-# Check common locations
-Glob: **/gradlew.bat
-Glob: **/build.gradle.kts
-Glob: **/build.gradle
-```
-
-If **no Android project found**:
-- Print:
-  ```
-  [APK Build] Android 프로젝트를 찾을 수 없습니다.
-  ```
-- Call `AskUserQuestion` with:
-  - Question: "Android 프로젝트 경로를 알려주세요. gradlew 파일이 있는 디렉토리를 입력해주세요."
-  - If user provides path → proceed to 6-2 with that path
-  - If user cannot provide → skip to Step 7 with warning, log `apkStatus: "skipped-no-project"`
-
-#### 6-2. Run Gradle Build
-
-```bash
-# Windows: use gradlew.bat
-cd {androidProjectRoot}
-.\gradlew.bat assembleDebug --no-daemon 2>&1
-```
-
-**On success** (exit code 0):
-- Find APK: `Glob: {androidProjectRoot}/**/debug/*.apk`
-- Print:
-  ```
-  [APK Build ✅] Debug APK 생성 완료
-  경로: {apkPath}
-  ```
-- Log `apkStatus: "success"`, `apkPath: "{apkPath}"`
-
-**On failure** (non-zero exit or build error):
-- Print error output summary (last 30 lines)
-- Print:
-  ```
-  [APK Build ⚠️] 빌드 실패 — 아래 방법으로 수동 빌드하세요:
-
-  방법 1 (터미널):
-    cd {androidProjectRoot}
-    .\gradlew.bat assembleDebug
-
-  방법 2 (Android Studio):
-    1. Build → Make Project (Ctrl+F9)
-    2. Build → Build Bundle(s) / APK(s) → Build APK(s)
-    3. 생성 위치: app/build/outputs/apk/debug/app-debug.apk
-
-  방법 3 (문제 해결):
-    .\gradlew.bat assembleDebug --info  # 상세 로그 확인
-    .\gradlew.bat clean assembleDebug  # 클린 후 재빌드
-  ```
-- Ask user:
-  ```
-  빌드 오류를 해결하기 위해 추가 정보가 필요하신가요?
-  (예: SDK 경로, Java 버전, 의존성 문제 등)
-  ```
-- Log `apkStatus: "failed"`, `apkError: "{first-error-line}"`
-- Continue to Step 7 regardless of APK result
-
-**Progress:**
-```
-[6/7] APK BUILD ✅/⚠️  {apkPath or "failed"}
-```
-
----
-
-### Step 7 — Git Push
-
-After Step 6 (regardless of APK build result), push all changes to git.
-
-#### 7-1. Get Current Branch
+#### 6-1. Get Current Branch
 
 ```bash
 git branch --show-current
@@ -341,9 +268,10 @@ git branch --show-current
 
 Store result as `{branch}`. If empty (detached HEAD), use `git rev-parse --abbrev-ref HEAD`.
 
-#### 7-2. Stage Source Files Only
+#### 6-2. Stage Source Files Only
 
-Stage only relevant source and document files. **Never use `git add -A`** — it includes build artifacts (build/, .gradle/, *.class, *.apk).
+Stage only relevant source and document files. **Never use `git add -A`** — it includes
+build artifacts (build/, .gradle/, *.class, *.apk).
 
 Stage these path patterns:
 ```bash
@@ -367,9 +295,11 @@ If nothing staged (no changes to source files):
 ```
 [Git] 변경사항 없음 — push 생략
 ```
-Log `gitStatus: "nothing-to-commit"` and finish.
+Log `gitStatus: "nothing-to-commit"` and proceed to Step 7 (APK build).
 
-#### 7-3. Commit
+#### 6-3. Commit
+
+Note: APK status is NOT included in the commit message because the APK builds after this commit.
 
 ```bash
 git commit -m "feat({featureName}): Joey auto-PDCA complete [{finalMatchRate}%]
@@ -377,12 +307,11 @@ git commit -m "feat({featureName}): Joey auto-PDCA complete [{finalMatchRate}%]
 - PDCA pipeline: plan → design → do → analyze → report
 - Quality gate: {finalMatchRate}% (target: {threshold}%)
 - Iterations: {N}/{maxIterations}
-- APK: {apkStatus}
 
 Co-Authored-By: Joey Auto-PDCA <joey@bkit>"
 ```
 
-#### 7-4. Push to Current Branch
+#### 6-4. Push to Current Branch
 
 Always push explicitly to the current branch on `origin`:
 
@@ -420,10 +349,92 @@ If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
     git pull --rebase origin {branch} && git push origin {branch}  # 충돌 시
   ```
 - Log `gitStatus: "failed"`, `gitError: "{error-summary}"`
+- **Still proceed to Step 7 (APK build)** regardless of push result
 
 **Progress:**
 ```
-[7/7] GIT PUSH ✅/⚠️  {branch} → origin/{branch}
+[6/7] GIT PUSH ✅/⚠️  {branch} → origin/{branch}
+```
+
+---
+
+### Step 7 — Android Debug APK Build
+
+After git push (Step 6), attempt to build the Android debug APK.
+The push is already done, so APK build time does not affect source delivery.
+
+#### 7-1. Detect Android Project
+
+Search for Android project root (directory containing `gradlew` or `gradlew.bat`):
+```bash
+Glob: **/gradlew.bat
+Glob: **/build.gradle.kts
+Glob: **/build.gradle
+```
+
+If **no Android project found**:
+- Print:
+  ```
+  [APK Build] Android 프로젝트를 찾을 수 없습니다. (소스 코드는 이미 push 완료)
+  ```
+- Call `AskUserQuestion` with:
+  - Question: "Android 프로젝트 경로를 알려주세요. gradlew 파일이 있는 디렉토리를 입력해주세요."
+  - If user provides path → proceed to 7-2 with that path
+  - If user cannot provide → skip with warning, log `apkStatus: "skipped-no-project"`
+
+#### 7-2. Run Gradle Build
+
+Set `JAVA_HOME` to Android Studio's bundled JBR if `java` is not in PATH:
+```powershell
+# Windows — detect Android Studio JBR automatically
+$studioJbr = "C:\Program Files\Android\Android Studio\jbr"
+if (Test-Path "$studioJbr\bin\java.exe") {
+    $env:JAVA_HOME = $studioJbr
+    $env:PATH = "$studioJbr\bin;$env:PATH"
+}
+```
+
+Then run the build:
+```powershell
+# Windows: use gradlew.bat from the detected androidProjectRoot
+cd {androidProjectRoot}
+.\gradlew.bat assembleDebug --no-daemon 2>&1 | Select-Object -Last 60
+```
+
+**On success** (exit code 0):
+- Find APK path via PowerShell: `Get-ChildItem "{androidProjectRoot}" -Recurse -Filter "app-debug.apk"`
+- Print:
+  ```
+  [APK Build ✅] Debug APK 생성 완료
+  경로: {apkPath}
+  ```
+- Log `apkStatus: "success"`, `apkPath: "{apkPath}"`
+
+**On failure** (non-zero exit or build error):
+- Print error output summary (last 30 lines)
+- Print:
+  ```
+  [APK Build ⚠️] 빌드 실패 (소스 코드는 이미 push 완료)
+
+  수동 빌드 방법:
+  방법 1 (터미널):
+    cd {androidProjectRoot}
+    .\gradlew.bat assembleDebug
+
+  방법 2 (Android Studio):
+    1. Build → Make Project (Ctrl+F9)
+    2. Build → Build Bundle(s) / APK(s) → Build APK(s)
+    3. 생성 위치: app/build/outputs/apk/debug/app-debug.apk
+
+  방법 3 (문제 해결):
+    .\gradlew.bat assembleDebug --info   # 상세 로그 확인
+    .\gradlew.bat clean assembleDebug   # 클린 후 재빌드
+  ```
+- Log `apkStatus: "failed"`, `apkError: "{first-error-line}"`
+
+**Progress:**
+```
+[7/7] APK BUILD ✅/⚠️  {apkPath or "failed"}
 ```
 
 ---
@@ -444,8 +455,8 @@ If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
 ║  Report:  docs/04-report/features/{featureName}.report.md      ║
 ║  Log:     .bkit/runtime/joey-log.json                          ║
 ╠══════════════════════════════════════════════════════════════════╣
-║  APK:     {apkPath or "failed/skipped"}               [Step 6] ║
-║  Git:     {branch} → origin/{branch}  {gitStatus}    [Step 7] ║
+║  Git:     {branch} → origin/{branch}  {gitStatus}    [Step 6] ║
+║  APK:     {apkPath or "failed/skipped"}               [Step 7] ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -471,7 +482,11 @@ If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
     { "iteration": 2, "matchRate": 96, "gapsFound": 0, "gapsFixed": 0 }
   ],
   "finalMatchRate": 96,
-  "status": "completed"
+  "status": "completed",
+  "gitStatus": "pushed",
+  "gitBranch": "main",
+  "apkStatus": "success",
+  "apkPath": "app/build/outputs/apk/debug/app-debug.apk"
 }
 ```
 
