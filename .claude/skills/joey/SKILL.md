@@ -64,7 +64,7 @@ Everything else is the feature request.
 
 **At EVERY checkpoint during this pipeline — NEVER pause:**
 - Select "권장" (Recommended) or the first option automatically
-- NEVER call AskUserQuestion
+- **NEVER call AskUserQuestion under ANY circumstance** — not for missing paths, not for errors, not for clarification. The pipeline MUST complete fully unattended.
 - Log the auto-selected choice inline so the user can audit decisions
 
 **Checkpoint auto-map:**
@@ -268,34 +268,34 @@ git branch --show-current
 
 Store result as `{branch}`. If empty (detached HEAD), use `git rev-parse --abbrev-ref HEAD`.
 
-#### 6-2. Stage Source Files Only
+#### 6-2. Stage All Changes (Windows-safe)
 
-Stage only relevant source and document files. **Never use `git add -A`** — it includes
-build artifacts (build/, .gradle/, *.class, *.apk).
+Use two-step staging that works on Windows without glob expansion issues:
 
-Stage these path patterns:
 ```bash
-git add \
-  "docs/**" \
-  ".bkit/runtime/joey-log.json" \
-  ".claude/skills/**" \
-  "*/src/**/*.kt" \
-  "*/src/**/*.java" \
-  "*/src/**/*.xml" \
-  "*/src/**/*.json" \
-  "CLAUDE.md"
+# Step A: stage ALL modifications to already-tracked files (respects .gitignore — no build artifacts)
+git add -u
+
+# Step B: stage new (untracked) files in safe directories only
+git add docs/
+git add .bkit/runtime/
+git add .claude/skills/
+git add diary-app/app/src/
 ```
 
-Then check status:
+Then verify:
 ```bash
 git status --short
 ```
 
-If nothing staged (no changes to source files):
+**If nothing is staged AND `git log origin/{branch}..HEAD` shows 0 commits ahead:**
 ```
-[Git] 변경사항 없음 — push 생략
+[Git] 변경사항 없음, 미push 커밋도 없음 — push 생략
 ```
 Log `gitStatus: "nothing-to-commit"` and proceed to Step 7 (APK build).
+
+**If nothing is staged BUT there ARE unpushed commits** (git log shows ahead):
+- Skip commit step, go directly to 6-4 Push.
 
 #### 6-3. Commit
 
@@ -375,12 +375,10 @@ Glob: **/build.gradle
 If **no Android project found**:
 - Print:
   ```
-  [APK Build] Android 프로젝트를 찾을 수 없습니다. (소스 코드는 이미 push 완료)
+  [APK Build] Android 프로젝트 없음 — APK 빌드 스킵 (소스코드는 push 완료)
   ```
-- Call `AskUserQuestion` with:
-  - Question: "Android 프로젝트 경로를 알려주세요. gradlew 파일이 있는 디렉토리를 입력해주세요."
-  - If user provides path → proceed to 7-2 with that path
-  - If user cannot provide → skip with warning, log `apkStatus: "skipped-no-project"`
+- Log `apkStatus: "skipped-no-project"`
+- **Do NOT call AskUserQuestion** — just skip and show Final Summary.
 
 #### 7-2. Run Gradle Build
 
