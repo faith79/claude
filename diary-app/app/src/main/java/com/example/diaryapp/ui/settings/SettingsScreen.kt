@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.ui.theme.AppThemeTemplates
@@ -210,6 +211,47 @@ fun SettingsScreen(
                     Text("로그아웃", color = MaterialTheme.colorScheme.error)
                 }
             }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Design Ref: skill-test-run §FR-01/02/03 — 앱 정보 섹션
+            Text(
+                "앱 정보",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(8.dp))
+
+            val context = LocalContext.current
+            val (versionName, versionCode) = remember {
+                try {
+                    val pi = context.packageManager.getPackageInfo(context.packageName, 0)
+                    (pi.versionName ?: "0.1.0") to pi.longVersionCode
+                } catch (_: Exception) { "0.1.0" to 1L }
+            }
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("버전", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "v$versionName ($versionCode)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "조이어리 — 나만의 감정 일기",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 
