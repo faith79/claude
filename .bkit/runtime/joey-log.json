@@ -1,7 +1,7 @@
 {
-  "feature": "joey-auto-push-fix",
+  "feature": "skill-test",
   "threshold": 90,
-  "startedAt": "2026-05-24T02:00:00.000Z",
+  "startedAt": "2026-05-24T12:40:00.000Z",
   "decisions": [
     { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
@@ -9,13 +9,9 @@
     { "checkpoint": 4, "decision": "auto-approve", "filesChanged": 1 }
   ],
   "iterations": [
-    { "iteration": 1, "matchRate": 97, "gapsFound": 0, "gapsFixed": 0 }
+    { "iteration": 1, "matchRate": 100, "gapsFound": 0, "gapsFixed": 0 }
   ],
-  "finalMatchRate": 97,
+  "finalMatchRate": 100,
   "status": "completed",
-  "completedAt": "2026-05-24T12:32:00.000Z",
-  "gitStatus": "pushed",
-  "gitBranch": "main",
-  "apkStatus": "success",
-  "apkPath": "diary-app/app/build/outputs/apk/debug/app-debug.apk"
+  "completedAt": "2026-05-24T12:45:00.000Z"
 }

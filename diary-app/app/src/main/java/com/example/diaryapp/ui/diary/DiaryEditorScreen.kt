@@ -152,6 +152,15 @@ fun DiaryEditorScreen(
                         .heightIn(min = 200.dp),
                     maxLines = Int.MAX_VALUE
                 )
+                // Design Ref: skill-test §FR-01 — 글자수 카운터
+                Text(
+                    "${content.length}자",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.End)
+                )
 
                 Spacer(Modifier.height(16.dp))
 
