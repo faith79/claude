@@ -30,7 +30,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.ui.theme.AppThemeTemplates
-import com.example.diaryapp.ui.theme.DiaryBgPalette
 import com.example.diaryapp.ui.theme.WeekdayColorPalette
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
@@ -170,11 +169,11 @@ fun SettingsScreen(
                         onColorSelected = settingsViewModel::setWeekdayColor
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    // Design Ref: joyary-ux-improvements §FR-04 — 글쓰기/수정 배경색 (관리자 설정)
+                    // Design Ref: calendar-diary-bg-fix §FR-02 — 글쓰기 배경색을 색상 테마 팔레트와 동일하게
                     ColorPaletteRow(
                         label = "글쓰기 배경색",
-                        colors = DiaryBgPalette.colors,
-                        labels = DiaryBgPalette.labels,
+                        colors = AppThemeTemplates.map { it.themeColors.appBg },
+                        labels = AppThemeTemplates.map { it.nameKo },
                         selectedColor = diaryBgColor,
                         onColorSelected = settingsViewModel::setDiaryBgColor
                     )

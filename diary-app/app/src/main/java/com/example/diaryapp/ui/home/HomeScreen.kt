@@ -163,8 +163,7 @@ fun HomeScreen(
                 }
             }
 
-            // 달력 아래 여백 영역 (필요 시 추가 콘텐츠 배치 가능)
-            Box(modifier = Modifier.weight(1f))
+            // Design Ref: calendar-diary-bg-fix §FR-01 — weight 필러 제거, 달력 상단 정렬
         }
     }
 }
@@ -290,15 +289,17 @@ private fun DayCell(
         else -> weekdayColor
     }
 
+    // Design Ref: calendar-diary-bg-fix §FR-01 — 셀 내용 상단 정렬
     Column(
         modifier = Modifier
             .height(60.dp)
             .padding(2.dp)
             .clip(CircleShape)
             .background(bgColor)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .padding(top = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         if (emotion != null) {
             Text(emotion.emoji, fontSize = 24.sp)

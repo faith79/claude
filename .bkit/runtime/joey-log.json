@@ -1,17 +1,20 @@
 {
-  "feature": "joyary-ux-improvements",
+  "feature": "calendar-diary-bg-fix",
   "threshold": 90,
-  "startedAt": "2026-05-24T13:00:00.000Z",
+  "startedAt": "2026-05-24T13:10:00.000Z",
+  "completedAt": "2026-05-24T13:45:00.000Z",
   "decisions": [
     { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 3, "decision": "option-c", "reason": "pragmatic-default" },
-    { "checkpoint": 4, "decision": "auto-approve", "filesChanged": 8 }
+    { "checkpoint": 4, "decision": "auto-approve", "filesChanged": 2 },
+    { "checkpoint": 5, "decision": "passed", "iteration": 1 }
   ],
   "iterations": [
-    { "iteration": 1, "matchRate": 97, "gapsFound": 0, "gapsFixed": 0 }
+    { "iteration": 1, "matchRate": 100, "gapsFound": 0, "gapsFixed": 0 }
   ],
-  "finalMatchRate": 97,
+  "finalMatchRate": 100,
   "status": "completed",
-  "completedAt": "2026-05-24T13:05:00.000Z"
+  "gitStatus": "pending",
+  "gitBranch": "main"
 }
