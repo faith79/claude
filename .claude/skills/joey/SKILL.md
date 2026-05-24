@@ -64,8 +64,16 @@ Everything else is the feature request.
 
 **At EVERY checkpoint during this pipeline — NEVER pause:**
 - Select "권장" (Recommended) or the first option automatically
-- **NEVER call AskUserQuestion under ANY circumstance** — not for missing paths, not for errors, not for clarification. The pipeline MUST complete fully unattended.
+- **NEVER call AskUserQuestion** — except for the ONE permitted case below
 - Log the auto-selected choice inline so the user can audit decisions
+
+### ONE Permitted User Interaction
+
+**Step 0.5 UI Design Picker** is the ONLY allowed `AskUserQuestion` call.
+It fires automatically when the feature request contains any of:
+`UI`, `ui`, `디자인`, `design`, `화면`, `스타일`, `세련`, `개선`, `모던`, `modern`
+
+All other checkpoints (CP-1 through CP-5) remain fully automatic.
 
 **Checkpoint auto-map:**
 
@@ -115,6 +123,111 @@ Everything else is the feature request.
    ║  Mode: Full-Auto — no confirmations                     ║
    ╚══════════════════════════════════════════════════════════╝
    ```
+
+---
+
+### Step 0.5 — UI Design Picker (UI 모드일 때만 실행)
+
+**Trigger:** feature request에 `UI`, `디자인`, `화면`, `스타일`, `세련`, `개선`, `모던`, `design` 포함 시 자동 실행.
+
+**Action:** `AskUserQuestion`으로 4가지 디자인 패키지를 제시한다. 사용자가 선택하면 그 스펙이 Plan/Design/Do 단계의 구현 기준이 된다.
+
+```
+Question: "어떤 UI 디자인 방향으로 개선할까요?"
+Header: "디자인 선택"
+```
+
+**4가지 패키지 (ASCII 프리뷰 포함):**
+
+#### 패키지 A: Material You 다이나믹 (2025 최신 Android 스타일)
+```
+┌─────────────────────────────┐
+│  조이어리                   │
+│  2026년 5월        ⚙️       │
+├─────────────────────────────┤
+│  월  화  수  목  금  토  일 │
+│   1   2   3   4   5   6   7 │
+│  15  16  17  18 ●19  20  21 │
+│              ↑오늘:solid원형│
+├─────────────────────────────┤
+│  📅 19일 일기 내용 미리보기  │
+└──────────[✏️ 오늘 일기 쓰기]┘
+   ← Extended FAB (텍스트포함)
+```
+구현 스펙:
+- `TopAppBar` → `LargeTopAppBar` + `exitUntilCollapsedScrollBehavior()`
+- `Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection))`
+- `FloatingActionButton` → `ExtendedFloatingActionButton(icon=Add, text="오늘 일기 쓰기")`
+- `DayCell.isToday`: bg=`colorScheme.primary`, textColor=`colorScheme.onPrimary`
+
+#### 패키지 B: 이모지 감정 캘린더
+```
+┌─────────────────────────────┐
+│  5월 ←  →           ⚙️     │
+│  이번달: 😊×5 😢×2 😡×1    │
+├─────────────────────────────┤
+│  월   화   수   목   금     │
+│       😊   😢        😊    │
+│  1    2    3    4    5      │
+│  😊        😡              │
+│  8    9   10   11   12      │
+└─────────────────────────────┘
+  ↑ 이모지 크게 + 날짜 작게
+```
+구현 스펙:
+- `DayCell`: emotion 있으면 emoji 32sp 중앙, 날짜 10sp 좌상단 오버레이
+- `CalendarHeader` 하단에 이번달 감정 분포 통계 한 줄 추가
+- `diaryMap`에서 emotion count 집계 → `"😊×N 😢×N"` 표시
+
+#### 패키지 C: 보텀 네비게이션 미니멀
+```
+┌─────────────────────────────┐
+│                       ＋    │
+│   2026년                    │
+│   5월              Bold 32sp│
+├─────────────────────────────┤
+│  월  화  수  목  금  토  일 │
+│   1   2   3   4   5   6   7 │
+│  15  16  17  18  19  20  21 │
+│  22  23  24  25  26  27  28 │
+├─────────────────────────────┤
+│  🏠 홈    │  ⚙️ 설정        │
+└─────────────────────────────┘
+  ↑ NavigationBar 하단 고정
+```
+구현 스펙:
+- `TopAppBar` 제거 → 달력 헤더에 월/년 Bold 32sp + 설정 아이콘
+- `NavigationBar` 하단 추가: 홈 / 설정 탭
+- `CalendarHeader`: year/month `headlineLarge` 폰트
+- `Scaffold.bottomBar = { NavigationBar {...} }`
+
+#### 패키지 D: 스크롤 카드 리스트
+```
+┌─────────────────────────────┐
+│  조이어리              ⚙️   │
+├───── 미니 달력 (3줄) ───────┤
+│ 1  2  3  4  5  6  7  8  9  │
+│10 11 12 13 14 15 16 17 18  │
+│19●20 21 22 23 24 25 26 27  │
+├───── 이번달 일기 ───────────┤
+│ 😊 5월19일            오늘  │
+│ 오늘은 정말 좋은 하루...    │
+├─────────────────────────────┤
+│ 😢 5월12일                  │
+│ 비가 많이 와서 우울했던...   │
+└─────────────────────────────┘
+  ↑ 카드 스크롤 리스트
+```
+구현 스펙:
+- `LazyVerticalGrid` 7열 → 가로 스크롤 `LazyRow` 미니 달력 (3행)
+- 달력 아래: 해당 월 일기 `LazyColumn` 카드 리스트
+- 카드: emotion emoji + 날짜 + 내용 첫 줄 미리보기
+- 날짜 탭 → 해당 카드로 스크롤
+
+**After user selects a package:**
+- `uiDesignChoice = "{A|B|C|D}: {packageName}"`
+- Log `{ checkpoint: 0.5, decision: "{A|B|C|D}", reason: "user-selected" }`
+- Proceed to Step 1 with the selected package's 구현 스펙 as the implementation guide
 
 ---
 
@@ -532,6 +645,20 @@ cd {androidProjectRoot}
 
 # 낮은 기준 — 빠른 프로토타입
 /joey 80 간단한 설정 화면 추가
+
+# UI 디자인 모드 — 디자인 피커 자동 실행
+/joey 홈 화면 UI 개선해줘        # → Step 0.5 디자인 피커 실행 (A/B/C/D 선택)
+/joey 95 설정 화면 디자인 세련되게  # → 피커 후 95% 기준으로 진행
+/joey UI 전체 화면 모던하게 바꿔줘  # → 피커 후 전체 적용
 ```
+
+## UI Design Mode — 빠른 참조
+
+| 패키지 | 특징 | 주요 변경 파일 |
+|--------|------|---------------|
+| A: Material You 다이나믹 | LargeTopAppBar + ExtendedFAB + solid 오늘 원형 | HomeScreen.kt |
+| B: 이모지 감정 캘린더 | 날짜 셀에 emoji 크게 + 감정 통계 헤더 | HomeScreen.kt |
+| C: 보텀 네비게이션 미니멀 | NavigationBar 하단 + Bold 월/년 헤더 | HomeScreen.kt |
+| D: 스크롤 카드 리스트 | 미니 달력 + 일기 카드 리스트 | HomeScreen.kt |
 
 ARGUMENTS:

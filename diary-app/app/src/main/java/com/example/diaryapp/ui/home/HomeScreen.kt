@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +64,8 @@ fun HomeScreen(
     val initialPage = (now.year - BASE_YEAR) * 12 + (now.monthValue - 1)
 
     val pagerState = rememberPagerState(initialPage = initialPage) { TOTAL_PAGES }
+    // Design Ref: joey-ui-material-you §FR-01 — LargeTopAppBar 스크롤 시 접힘
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     fun pageToYearMonth(page: Int): YearMonth =
         YearMonth.of(BASE_YEAR + page / 12, page % 12 + 1)
@@ -82,31 +85,36 @@ fun HomeScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            // Design Ref: joyary-upgrade-v6 §FR-10 — 검색 버튼 제거
-            TopAppBar(
+            // Design Ref: joey-ui-material-you §FR-01 — LargeTopAppBar (접히는 큰 헤더)
+            LargeTopAppBar(
                 title = { Text("조이어리") },
                 actions = {
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Default.Settings, "설정")
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                scope.launch {
-                    val todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    val existing = diaryViewModel.getEntryByDate(userId, todayDate)
-                    if (existing != null) {
-                        onEditDiary(todayDate, existing.id)
-                    } else {
-                        onAddDiary(todayDate)
+            // Design Ref: joey-ui-material-you §FR-02 — ExtendedFAB (텍스트 레이블 포함)
+            ExtendedFloatingActionButton(
+                onClick = {
+                    scope.launch {
+                        val todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                        val existing = diaryViewModel.getEntryByDate(userId, todayDate)
+                        if (existing != null) {
+                            onEditDiary(todayDate, existing.id)
+                        } else {
+                            onAddDiary(todayDate)
+                        }
                     }
-                }
-            }) {
-                Icon(Icons.Default.Add, "일기 추가")
-            }
+                },
+                icon = { Icon(Icons.Default.Add, "일기 추가") },
+                text = { Text("오늘 일기 쓰기") }
+            )
         }
     ) { padding ->
         // Design Ref: §5.1 — 달력 고정(상단) + 아래 영역 weight(1f) (FR-02)
@@ -267,16 +275,16 @@ private fun DayCell(
     onClick: () -> Unit
 ) {
     val emotion = entry?.emotion
-    // Design Ref: joyary-upgrade-v3 §5.3 — LocalThemeColors.todayBg 적용 (FR-05)
     val themeColors = LocalThemeColors.current
+    // Design Ref: joey-ui-material-you §FR-03 — 오늘 날짜: solid primary 원형 강조
     val bgColor = when {
-        isToday -> themeColors.todayBg
+        isToday -> MaterialTheme.colorScheme.primary
         else -> Color.Transparent
     }
 
     // Plan SC: FR-08 — 토요일 파랑, 일요일 빨강; Plan SC: SC-05 — 평일 weekdayColor 적용
     val dateColor = when {
-        isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+        isToday -> MaterialTheme.colorScheme.onPrimary
         dayOfWeek == DayOfWeek.SATURDAY -> DateSaturday
         dayOfWeek == DayOfWeek.SUNDAY -> DateSunday
         else -> weekdayColor
