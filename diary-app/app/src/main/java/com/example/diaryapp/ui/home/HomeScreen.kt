@@ -69,7 +69,11 @@ fun HomeScreen(
 
     LaunchedEffect(pagerState.settledPage, userId) {
         if (userId.isNotEmpty()) {
-            diaryViewModel.loadMonth(userId, pageToYearMonth(pagerState.settledPage))
+            val current = pageToYearMonth(pagerState.settledPage)
+            diaryViewModel.loadMonth(userId, current)
+            // Design Ref: joyary-ux-improvements §FR-03 — 인접 달 미리 불러오기
+            diaryViewModel.prefetchMonth(userId, current.minusMonths(1))
+            diaryViewModel.prefetchMonth(userId, current.plusMonths(1))
         }
     }
 

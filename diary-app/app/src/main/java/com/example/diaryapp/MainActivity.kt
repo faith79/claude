@@ -31,11 +31,13 @@ class MainActivity : ComponentActivity() {
             val templateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
             val template = AppThemeTemplates.getOrElse(templateIndex) { AppThemeTemplates[0] }
             val weekday by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
+            // Design Ref: joyary-ux-improvements §FR-04 — 에디터 배경색 사용자 지정값 사용
+            val diaryBg by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
 
             DiaryAppTheme(colorScheme = template.colorScheme) {
                 CompositionLocalProvider(
                     LocalThemeColors provides template.themeColors.copy(
-                        diaryBg = template.themeColors.appBg,
+                        diaryBg = diaryBg,
                         weekdayColor = weekday
                     )
                 ) {

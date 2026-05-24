@@ -24,6 +24,7 @@ import com.example.diaryapp.data.model.WeatherTag
 import com.example.diaryapp.ui.components.LoadingOverlay
 import com.example.diaryapp.ui.components.MultiImagePicker
 import com.example.diaryapp.ui.components.WeatherSelector
+import com.example.diaryapp.ui.theme.LocalThemeColors
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryUiState
 import com.example.diaryapp.viewmodel.DiaryViewModel
@@ -108,10 +109,13 @@ fun DiaryEditorScreen(
                 )
             }
         ) { padding ->
+            // Design Ref: joyary-ux-improvements §FR-04 — 에디터 배경색 사용자 지정
+            val diaryBg = LocalThemeColors.current.diaryBg
             // Design Ref: joyary-upgrade-v6 §5.4 — imePadding으로 키보드 출현 시 스크롤 확보 (FR-07)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(diaryBg)
                     .padding(padding)
                     .imePadding()
                     .verticalScroll(rememberScrollState())

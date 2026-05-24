@@ -312,8 +312,310 @@ private val MochaTemplate = AppThemeTemplate(
     )
 )
 
-// Plan SC: SC-02 — 10종 통합 테마 목록
+// 10: 인디고
+private val IndigoTemplate = AppThemeTemplate(
+    index = 10, nameKo = "인디고",
+    previewColor = Color(0xFF5C7CFA),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF5C7CFA),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFDBE4FF),
+        onPrimaryContainer     = Color(0xFF1C3BBF),
+        secondary              = Color(0xFF4C6EF5),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFEEF2FF),
+        onSecondaryContainer   = Color(0xFF1C3BBF),
+        background             = Color(0xFFF0F2FF),
+        onBackground           = Color(0xFF1A1E3A),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF1A1E3A),
+        surfaceVariant         = Color(0xFFE8ECFF),
+        onSurfaceVariant       = Color(0xFF4A4E72),
+        outline                = Color(0xFF9AAAF8),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF7C9BFA),
+        appBg      = Color(0xFFF0F2FF),
+        todayBg    = Color(0xFF6888F5)
+    )
+)
+
+// 11: 에메랄드
+private val EmeraldTemplate = AppThemeTemplate(
+    index = 11, nameKo = "에메랄드",
+    previewColor = Color(0xFF2ECC71),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF2ECC71),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFB7F5D2),
+        onPrimaryContainer     = Color(0xFF0A5C30),
+        secondary              = Color(0xFF27AE60),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFD5F5E3),
+        onSecondaryContainer   = Color(0xFF0A5C30),
+        background             = Color(0xFFF0FFF8),
+        onBackground           = Color(0xFF0A2E1A),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF0A2E1A),
+        surfaceVariant         = Color(0xFFD5F5E3),
+        onSurfaceVariant       = Color(0xFF2A6040),
+        outline                = Color(0xFF6EE0A0),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF55D98A),
+        appBg      = Color(0xFFF0FFF8),
+        todayBg    = Color(0xFF3DC876)
+    )
+)
+
+// 12: 써니
+private val SunnyTemplate = AppThemeTemplate(
+    index = 12, nameKo = "써니",
+    previewColor = Color(0xFFFFCA28),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFFFFCA28),
+        onPrimary              = Color(0xFF3A2A00),
+        primaryContainer       = Color(0xFFFFF3C4),
+        onPrimaryContainer     = Color(0xFF5A4200),
+        secondary              = Color(0xFFFFB300),
+        onSecondary            = Color(0xFF3A2A00),
+        secondaryContainer     = Color(0xFFFFF8DC),
+        onSecondaryContainer   = Color(0xFF5A4200),
+        background             = Color(0xFFFFFDE7),
+        onBackground           = Color(0xFF2A2200),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF2A2200),
+        surfaceVariant         = Color(0xFFFFF9C4),
+        onSurfaceVariant       = Color(0xFF6A5A00),
+        outline                = Color(0xFFE8C040),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFFFFD740),
+        appBg      = Color(0xFFFFFDE7),
+        todayBg    = Color(0xFFFFCA28)
+    )
+)
+
+// 13: 체리
+private val CherryTemplate = AppThemeTemplate(
+    index = 13, nameKo = "체리",
+    previewColor = Color(0xFFC0392B),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFFC0392B),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFFFCDD2),
+        onPrimaryContainer     = Color(0xFF7B1818),
+        secondary              = Color(0xFFE74C3C),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFFFEBEE),
+        onSecondaryContainer   = Color(0xFF7B1818),
+        background             = Color(0xFFFFF5F5),
+        onBackground           = Color(0xFF2A0A0A),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF2A0A0A),
+        surfaceVariant         = Color(0xFFFFE0E0),
+        onSurfaceVariant       = Color(0xFF723030),
+        outline                = Color(0xFFD87878),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFFD05050),
+        appBg      = Color(0xFFFFF5F5),
+        todayBg    = Color(0xFFBF3838)
+    )
+)
+
+// 14: 딥블루
+private val DeepBlueTemplate = AppThemeTemplate(
+    index = 14, nameKo = "딥블루",
+    previewColor = Color(0xFF1565C0),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF1565C0),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFBBDEFB),
+        onPrimaryContainer     = Color(0xFF0D3E7A),
+        secondary              = Color(0xFF1976D2),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFE3F2FD),
+        onSecondaryContainer   = Color(0xFF0D3E7A),
+        background             = Color(0xFFF0F4FF),
+        onBackground           = Color(0xFF0A1A30),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF0A1A30),
+        surfaceVariant         = Color(0xFFDDEEFF),
+        onSurfaceVariant       = Color(0xFF2A4060),
+        outline                = Color(0xFF6898D8),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF3A7ED8),
+        appBg      = Color(0xFFF0F4FF),
+        todayBg    = Color(0xFF2060C0)
+    )
+)
+
+// 15: 올리브
+private val OliveTemplate = AppThemeTemplate(
+    index = 15, nameKo = "올리브",
+    previewColor = Color(0xFF8BC34A),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF8BC34A),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFDCEDC8),
+        onPrimaryContainer     = Color(0xFF33691E),
+        secondary              = Color(0xFF7CB342),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFF1F8E9),
+        onSecondaryContainer   = Color(0xFF33691E),
+        background             = Color(0xFFF5FAF0),
+        onBackground           = Color(0xFF1A2C10),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF1A2C10),
+        surfaceVariant         = Color(0xFFEAF4DA),
+        onSurfaceVariant       = Color(0xFF4A6030),
+        outline                = Color(0xFFA0C870),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFFA4D46A),
+        appBg      = Color(0xFFF5FAF0),
+        todayBg    = Color(0xFF8EC058)
+    )
+)
+
+// 16: 스틸
+private val SteelTemplate = AppThemeTemplate(
+    index = 16, nameKo = "스틸",
+    previewColor = Color(0xFF78909C),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF78909C),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFCFD8DC),
+        onPrimaryContainer     = Color(0xFF37474F),
+        secondary              = Color(0xFF607D8B),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFECEFF1),
+        onSecondaryContainer   = Color(0xFF37474F),
+        background             = Color(0xFFF4F7F9),
+        onBackground           = Color(0xFF1A2530),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF1A2530),
+        surfaceVariant         = Color(0xFFE4EBF0),
+        onSurfaceVariant       = Color(0xFF4A5A60),
+        outline                = Color(0xFF9AB0B8),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF90A8B4),
+        appBg      = Color(0xFFF4F7F9),
+        todayBg    = Color(0xFF7898A4)
+    )
+)
+
+// 17: 자수정
+private val AmethystTemplate = AppThemeTemplate(
+    index = 17, nameKo = "자수정",
+    previewColor = Color(0xFF8E44AD),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF8E44AD),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFE1BEE7),
+        onPrimaryContainer     = Color(0xFF4A1470),
+        secondary              = Color(0xFF9B59B6),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFF3E5F5),
+        onSecondaryContainer   = Color(0xFF4A1470),
+        background             = Color(0xFFF8F0FF),
+        onBackground           = Color(0xFF200A30),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF200A30),
+        surfaceVariant         = Color(0xFFEDD8F8),
+        onSurfaceVariant       = Color(0xFF5E2880),
+        outline                = Color(0xFFBE80D8),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFFAA60C8),
+        appBg      = Color(0xFFF8F0FF),
+        todayBg    = Color(0xFF9848B8)
+    )
+)
+
+// 18: 오션
+private val OceanTemplate = AppThemeTemplate(
+    index = 18, nameKo = "오션",
+    previewColor = Color(0xFF00ACC1),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF00ACC1),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFB2EBF2),
+        onPrimaryContainer     = Color(0xFF005B6A),
+        secondary              = Color(0xFF0097A7),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFE0F7FA),
+        onSecondaryContainer   = Color(0xFF005B6A),
+        background             = Color(0xFFF0FAFA),
+        onBackground           = Color(0xFF001E28),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF001E28),
+        surfaceVariant         = Color(0xFFD8F4F8),
+        onSurfaceVariant       = Color(0xFF205860),
+        outline                = Color(0xFF60C8D8),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF30C0D4),
+        appBg      = Color(0xFFF0FAFA),
+        todayBg    = Color(0xFF18A8C0)
+    )
+)
+
+// 19: 차콜
+private val CharcoalTemplate = AppThemeTemplate(
+    index = 19, nameKo = "차콜",
+    previewColor = Color(0xFF546E7A),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF546E7A),
+        onPrimary              = Color(0xFFFFFFFF),
+        primaryContainer       = Color(0xFFCFD8DC),
+        onPrimaryContainer     = Color(0xFF263238),
+        secondary              = Color(0xFF455A64),
+        onSecondary            = Color(0xFFFFFFFF),
+        secondaryContainer     = Color(0xFFECEFF1),
+        onSecondaryContainer   = Color(0xFF263238),
+        background             = Color(0xFFF5F6F7),
+        onBackground           = Color(0xFF1A2228),
+        surface                = Color(0xFFFFFFFF),
+        onSurface              = Color(0xFF1A2228),
+        surfaceVariant         = Color(0xFFE2E8EC),
+        onSurfaceVariant       = Color(0xFF425058),
+        outline                = Color(0xFF8898A0),
+        error                  = Color(0xFFE57373),
+        onError                = Color(0xFFFFFFFF)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF708890),
+        appBg      = Color(0xFFF5F6F7),
+        todayBg    = Color(0xFF5A7078)
+    )
+)
+
+// Design Ref: joyary-ux-improvements §FR-05 — 10→20종 통합 테마 목록
 val AppThemeTemplates: List<AppThemeTemplate> = listOf(
     SkyTemplate, MintTemplate, LavenderTemplate, PeachTemplate, RoseTemplate,
-    SageTemplate, ButterTemplate, LilacTemplate, CoralTemplate, MochaTemplate
+    SageTemplate, ButterTemplate, LilacTemplate, CoralTemplate, MochaTemplate,
+    IndigoTemplate, EmeraldTemplate, SunnyTemplate, CherryTemplate, DeepBlueTemplate,
+    OliveTemplate, SteelTemplate, AmethystTemplate, OceanTemplate, CharcoalTemplate
 )

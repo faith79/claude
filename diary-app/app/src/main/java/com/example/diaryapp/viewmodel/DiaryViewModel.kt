@@ -242,6 +242,27 @@ class DiaryViewModel @Inject constructor(
         localCache.removeEntry(entryKey)
     }
 
+    // Design Ref: joyary-ux-improvements §FR-03 — 인접 달 백그라운드 선로딩 (_diaries 미변경)
+    fun prefetchMonth(userId: String, yearMonth: YearMonth) {
+        val key = "${userId}_${yearMonth}"
+        if (memMonthCache.containsKey(key)) return
+        viewModelScope.launch {
+            val cached = withContext(Dispatchers.IO) { localCache.getMonth(key) }
+            if (cached != null) {
+                warmEntryCache(userId, cached)
+                memMonthCache[key] = cached
+                return@launch
+            }
+            try {
+                diaryRepository.getDiariesByMonth(userId, yearMonth).collect { list ->
+                    warmEntryCache(userId, list)
+                    memMonthCache[key] = list
+                    withContext(Dispatchers.IO) { localCache.putMonth(key, list) }
+                }
+            } catch (_: Exception) { /* prefetch 실패는 비핵심, 무시 */ }
+        }
+    }
+
     fun resetState() { _uiState.value = DiaryUiState.Idle }
     fun clearSelectedEntry() { _selectedEntry.value = null }
 }

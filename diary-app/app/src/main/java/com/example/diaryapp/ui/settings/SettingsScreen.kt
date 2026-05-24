@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.ui.theme.AppThemeTemplates
+import com.example.diaryapp.ui.theme.DiaryBgPalette
 import com.example.diaryapp.ui.theme.WeekdayColorPalette
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
@@ -46,6 +47,8 @@ fun SettingsScreen(
     val selectedTemplateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
     // Design Ref: joyary-upgrade-v5 §3.1 — 평일 글씨색 collect (FR-06)
     val weekdayColor by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
+    // Design Ref: joyary-ux-improvements §FR-04 — 글쓰기 배경색 collect
+    val diaryBgColor by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -160,6 +163,15 @@ fun SettingsScreen(
                         labels = WeekdayColorPalette.labels,
                         selectedColor = weekdayColor,
                         onColorSelected = settingsViewModel::setWeekdayColor
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    // Design Ref: joyary-ux-improvements §FR-04 — 글쓰기/수정 배경색 (관리자 설정)
+                    ColorPaletteRow(
+                        label = "글쓰기 배경색",
+                        colors = DiaryBgPalette.colors,
+                        labels = DiaryBgPalette.labels,
+                        selectedColor = diaryBgColor,
+                        onColorSelected = settingsViewModel::setDiaryBgColor
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     // Plan SC: SC-07 — 기본값으로 초기화 (FR-08)

@@ -1,8 +1,13 @@
 {
-  "feature": "joyary-diary-style-fix",
+  "feature": "joyary-ux-improvements",
   "threshold": 90,
-  "startedAt": "2026-05-23T00:00:00.000Z",
-  "decisions": [],
+  "startedAt": "2026-05-24T00:00:00.000Z",
+  "decisions": [
+    { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
+    { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
+    { "checkpoint": 3, "decision": "option-c", "reason": "pragmatic-default" },
+    { "checkpoint": 4, "decision": "auto-approve", "filesChanged": 7 }
+  ],
   "iterations": [],
   "finalMatchRate": null,
   "status": "running"
