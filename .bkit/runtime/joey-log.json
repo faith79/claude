@@ -13,5 +13,9 @@
   ],
   "finalMatchRate": 97,
   "status": "completed",
-  "completedAt": "2026-05-24T02:05:00.000Z"
+  "completedAt": "2026-05-24T12:32:00.000Z",
+  "gitStatus": "pushed",
+  "gitBranch": "main",
+  "apkStatus": "success",
+  "apkPath": "diary-app/app/build/outputs/apk/debug/app-debug.apk"
 }

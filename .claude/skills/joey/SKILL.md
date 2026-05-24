@@ -270,17 +270,21 @@ Store result as `{branch}`. If empty (detached HEAD), use `git rev-parse --abbre
 
 #### 6-2. Stage All Changes (Windows-safe)
 
-Use two-step staging that works on Windows without glob expansion issues:
+Stage only source files and docs — **never use `git add -u`** (it stages tracked build artifacts):
 
 ```bash
-# Step A: stage ALL modifications to already-tracked files (respects .gitignore — no build artifacts)
-git add -u
-
-# Step B: stage new (untracked) files in safe directories only
+# Stage only safe source directories (no build artifacts)
 git add docs/
-git add .bkit/runtime/
+git add .bkit/runtime/joey-log.json
 git add .claude/skills/
 git add diary-app/app/src/
+git add CLAUDE.md
+```
+
+Safety net — in case build artifacts were previously staged, unstage them:
+```bash
+git restore --staged diary-app/app/build/ 2>/dev/null || true
+git restore --staged diary-app/.gradle/ 2>/dev/null || true
 ```
 
 Then verify:
