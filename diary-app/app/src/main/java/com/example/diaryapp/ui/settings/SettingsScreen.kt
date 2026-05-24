@@ -22,6 +22,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -214,7 +218,7 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Design Ref: skill-test-run §FR-01/02/03 — 앱 정보 섹션
+            // Design Ref: joey-auto-push-fix §FR-01/02 — 앱 정보 섹션 (복사 기능 포함)
             Text(
                 "앱 정보",
                 style = MaterialTheme.typography.titleMedium,
@@ -231,8 +235,15 @@ fun SettingsScreen(
             }
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    // Design Ref: §FR-02 — 버전 행 탭 → 클립보드 복사
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                cm.setPrimaryClip(ClipData.newPlainText("version", "v$versionName"))
+                                Toast.makeText(context, "버전 복사됨", Toast.LENGTH_SHORT).show()
+                            },
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("버전", style = MaterialTheme.typography.bodyLarge)
@@ -245,6 +256,13 @@ fun SettingsScreen(
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "조이어리 — 나만의 감정 일기",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    // Design Ref: §FR-01 — 저작권 표시
+                    Text(
+                        "© 2026 조이어리",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

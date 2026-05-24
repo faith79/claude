@@ -1,7 +1,7 @@
 {
-  "feature": "skill-test-run",
+  "feature": "joey-auto-push-fix",
   "threshold": 90,
-  "startedAt": "2026-05-24T01:00:00.000Z",
+  "startedAt": "2026-05-24T02:00:00.000Z",
   "decisions": [
     { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
@@ -13,5 +13,5 @@
   ],
   "finalMatchRate": 97,
   "status": "completed",
-  "completedAt": "2026-05-24T01:05:00.000Z"
+  "completedAt": "2026-05-24T02:05:00.000Z"
 }
