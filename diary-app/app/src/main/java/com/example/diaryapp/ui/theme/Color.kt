@@ -54,23 +54,32 @@ val SkyDarkSurface   = Color(0xFF1A2535)
 val SkyDarkBackground = Color(0xFF121C28)
 val SkyDarkOnSurface = Color(0xFFD0E8F5)
 
-// Design Ref: joyary-upgrade-v5 §3.2 — 일기 배경색 팔레트 (FR-05, Option C: object 네임스페이스)
+// Design Ref: diary-editor-bg-setting §FR-02 — DiaryBgPalette 확장 (light 5 + medium 5 + dark 5)
 object DiaryBgPalette {
     val colors = listOf(
-        Color(0xFFFFFFFF),  // 0: 흰색
-        Color(0xFFFFF8F0),  // 1: 크림 (기본)
-        Color(0xFFFFFDE7),  // 2: 연노랑
-        Color(0xFFFFF0F5),  // 3: 연분홍
-        Color(0xFFF5F0FF),  // 4: 연보라
-        Color(0xFFF0FAF6),  // 5: 민트 크림
-        Color(0xFFF0F8FF),  // 6: 하늘 크림
-        Color(0xFFF2F8F0),  // 7: 세이지 크림
-        Color(0xFFFBF8F5),  // 8: 모카 크림
-        Color(0xFFFFF2F0),  // 9: 코랄 크림
+        // Light
+        Color(0xFFFFFFFF),  // 흰색
+        Color(0xFFFFF8F0),  // 크림 (기본)
+        Color(0xFFFFF0F5),  // 연분홍
+        Color(0xFFF5F0FF),  // 연보라
+        Color(0xFFF0FAF6),  // 민트
+        // Medium
+        Color(0xFF8EC6E6),  // 하늘
+        Color(0xFFB4A0D8),  // 라벤더
+        Color(0xFFC8A888),  // 모카
+        Color(0xFF95C09A),  // 세이지
+        Color(0xFFF09090),  // 코랄
+        // Dark
+        Color(0xFF2C3E50),  // 슬레이트
+        Color(0xFF0D1E3A),  // 곤색
+        Color(0xFF2A1408),  // 다크브라운
+        Color(0xFF1E1A2E),  // 미드나잇
+        Color(0xFF1A2E1C),  // 다크그린
     )
     val labels = listOf(
-        "흰색", "크림", "연노랑", "연분홍", "연보라",
-        "민트", "하늘", "세이지", "모카", "코랄"
+        "흰색", "크림", "연분홍", "연보라", "민트",
+        "하늘", "라벤더", "모카", "세이지", "코랄",
+        "슬레이트", "곤색", "다크브라운", "미드나잇", "다크그린"
     )
 }
 

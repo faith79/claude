@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.ui.theme.AppThemeTemplates
+import com.example.diaryapp.ui.theme.DiaryBgPalette
 import com.example.diaryapp.ui.theme.WeekdayColorPalette
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
@@ -62,6 +63,8 @@ fun SettingsScreen(
     val selectedTemplateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
     // Design Ref: joyary-upgrade-v5 §3.1 — 평일 글씨색 collect (FR-06)
     val weekdayColor by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
+    // Design Ref: diary-editor-bg-setting §FR-03 — 글쓰기 배경색 독립 설정 (FR-03)
+    val diaryBgColor by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -180,7 +183,6 @@ fun SettingsScreen(
                         onSelect = settingsViewModel::selectTemplate
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    // Design Ref: joyary-diary-style-fix — 일기 배경색은 색상테마와 자동 연동 (테마 appBg 사용)
                     // Design Ref: joyary-upgrade-v5 §5.4 — 평일 글씨색 팔레트 행 (FR-06)
                     ColorPaletteRow(
                         label = "평일 글씨색",
@@ -188,6 +190,15 @@ fun SettingsScreen(
                         labels = WeekdayColorPalette.labels,
                         selectedColor = weekdayColor,
                         onColorSelected = settingsViewModel::setWeekdayColor
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    // Design Ref: diary-editor-bg-setting §FR-03 — 글쓰기/수정 배경색 독립 팔레트
+                    ColorPaletteRow(
+                        label = "글쓰기/수정 배경색",
+                        colors = DiaryBgPalette.colors,
+                        labels = DiaryBgPalette.labels,
+                        selectedColor = diaryBgColor,
+                        onColorSelected = settingsViewModel::setDiaryBgColor
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     // Plan SC: SC-07 — 기본값으로 초기화 (FR-08)

@@ -157,13 +157,21 @@ private fun DiaryPageContent(
     var selectedImageIndex by remember { mutableStateOf<Int?>(null) }
     val overlayImages = entry?.imageUrls ?: emptyList()
     val diaryBg = LocalThemeColors.current.diaryBg
+    // Design Ref: diary-editor-bg-setting §FR-05 — adaptive contentColor via luminance
+    val luminance = 0.299f * diaryBg.red + 0.587f * diaryBg.green + 0.114f * diaryBg.blue
+    val contentColor = if (luminance < 0.5f) Color.White else Color.Black
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = diaryBg,
             topBar = {
                 TopAppBar(
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = diaryBg),
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = diaryBg,
+                        titleContentColor = contentColor,
+                        navigationIconContentColor = contentColor,
+                        actionIconContentColor = contentColor
+                    ),
                     // Design Ref: joyary-upgrade-v6 §5.2 — 날짜 옆 요일 표시 (FR-03)
                     title = { Text(formatDateWithDay(date)) },
                     navigationIcon = {

@@ -612,10 +612,103 @@ private val CharcoalTemplate = AppThemeTemplate(
     )
 )
 
-// Design Ref: joyary-ux-improvements §FR-05 — 10→20종 통합 테마 목록
+// Design Ref: diary-editor-bg-setting §FR-01 — 어두운 테마 3종 추가 (index 20~22)
+
+// 20: 미드나잇
+private val MidnightTemplate = AppThemeTemplate(
+    index = 20, nameKo = "미드나잇",
+    previewColor = Color(0xFF2C2C3E),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFFBB86FC),
+        onPrimary              = Color(0xFF1A0040),
+        primaryContainer       = Color(0xFF3D2A6E),
+        onPrimaryContainer     = Color(0xFFE8D5FF),
+        secondary              = Color(0xFF9D8FCF),
+        onSecondary            = Color(0xFF1A1240),
+        secondaryContainer     = Color(0xFF2D2450),
+        onSecondaryContainer   = Color(0xFFD8D0F0),
+        background             = Color(0xFF121220),
+        onBackground           = Color(0xFFE0E0EE),
+        surface                = Color(0xFF1E1E30),
+        onSurface              = Color(0xFFE0E0EE),
+        surfaceVariant         = Color(0xFF2A2A40),
+        onSurfaceVariant       = Color(0xFFB0B0CC),
+        outline                = Color(0xFF6060A0),
+        error                  = Color(0xFFCF6679),
+        onError                = Color(0xFF370017)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF2C2C3E),
+        appBg      = Color(0xFF121220),
+        todayBg    = Color(0xFF5A3A9E)
+    )
+)
+
+// 21: 곤색
+private val NavyTemplate = AppThemeTemplate(
+    index = 21, nameKo = "곤색",
+    previewColor = Color(0xFF1C3050),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFF7EAEDD),
+        onPrimary              = Color(0xFF001830),
+        primaryContainer       = Color(0xFF1A3A5E),
+        onPrimaryContainer     = Color(0xFFD0E8F8),
+        secondary              = Color(0xFF6898C8),
+        onSecondary            = Color(0xFF001428),
+        secondaryContainer     = Color(0xFF142D4A),
+        onSecondaryContainer   = Color(0xFFC0D8F0),
+        background             = Color(0xFF0A1628),
+        onBackground           = Color(0xFFD8E8F8),
+        surface                = Color(0xFF0E1E38),
+        onSurface              = Color(0xFFD8E8F8),
+        surfaceVariant         = Color(0xFF182840),
+        onSurfaceVariant       = Color(0xFFA0C0D8),
+        outline                = Color(0xFF4070A0),
+        error                  = Color(0xFFCF6679),
+        onError                = Color(0xFF370017)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF1C3050),
+        appBg      = Color(0xFF0A1628),
+        todayBg    = Color(0xFF2A4A7A)
+    )
+)
+
+// 22: 다크브라운
+private val DarkBrownTemplate = AppThemeTemplate(
+    index = 22, nameKo = "다크브라운",
+    previewColor = Color(0xFF3E2018),
+    colorScheme = lightColorScheme(
+        primary                = Color(0xFFD4A876),
+        onPrimary              = Color(0xFF2A1008),
+        primaryContainer       = Color(0xFF5C3020),
+        onPrimaryContainer     = Color(0xFFF0D8B8),
+        secondary              = Color(0xFFB88A60),
+        onSecondary            = Color(0xFF1E0C04),
+        secondaryContainer     = Color(0xFF40200E),
+        onSecondaryContainer   = Color(0xFFE0C8A0),
+        background             = Color(0xFF1C0F08),
+        onBackground           = Color(0xFFF0DCC8),
+        surface                = Color(0xFF281610),
+        onSurface              = Color(0xFFF0DCC8),
+        surfaceVariant         = Color(0xFF3C2018),
+        onSurfaceVariant       = Color(0xFFD0B890),
+        outline                = Color(0xFF7A5030),
+        error                  = Color(0xFFCF6679),
+        onError                = Color(0xFF370017)
+    ),
+    themeColors = ThemeColors(
+        calendarBg = Color(0xFF3E2018),
+        appBg      = Color(0xFF1C0F08),
+        todayBg    = Color(0xFF5C3020)
+    )
+)
+
+// Design Ref: joyary-ux-improvements §FR-05 — 10→20종 / diary-editor-bg-setting §FR-01 — 20→23종
 val AppThemeTemplates: List<AppThemeTemplate> = listOf(
     SkyTemplate, MintTemplate, LavenderTemplate, PeachTemplate, RoseTemplate,
     SageTemplate, ButterTemplate, LilacTemplate, CoralTemplate, MochaTemplate,
     IndigoTemplate, EmeraldTemplate, SunnyTemplate, CherryTemplate, DeepBlueTemplate,
-    OliveTemplate, SteelTemplate, AmethystTemplate, OceanTemplate, CharcoalTemplate
+    OliveTemplate, SteelTemplate, AmethystTemplate, OceanTemplate, CharcoalTemplate,
+    MidnightTemplate, NavyTemplate, DarkBrownTemplate
 )

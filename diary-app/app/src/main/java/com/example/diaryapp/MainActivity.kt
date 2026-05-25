@@ -31,11 +31,13 @@ class MainActivity : ComponentActivity() {
             val templateIndex by settingsViewModel.selectedTemplateIndex.collectAsStateWithLifecycle()
             val template = AppThemeTemplates.getOrElse(templateIndex) { AppThemeTemplates[0] }
             val weekday by settingsViewModel.weekdayColor.collectAsStateWithLifecycle()
+            // Design Ref: diary-editor-bg-setting §FR-04 — 글쓰기 배경색 독립 설정값 사용
+            val diaryBg by settingsViewModel.diaryBgColor.collectAsStateWithLifecycle()
 
             DiaryAppTheme(colorScheme = template.colorScheme) {
                 CompositionLocalProvider(
                     LocalThemeColors provides template.themeColors.copy(
-                        diaryBg = template.themeColors.calendarBg,
+                        diaryBg = diaryBg,
                         weekdayColor = weekday
                     )
                 ) {

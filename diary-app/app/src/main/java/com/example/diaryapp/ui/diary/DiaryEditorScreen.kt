@@ -77,14 +77,21 @@ fun DiaryEditorScreen(
         }
     }
 
-    // Design Ref: diary-bg-color-sync — containerColor = diaryBg (읽기 화면과 동일 패턴)
+    // Design Ref: diary-editor-bg-setting §FR-05 — adaptive contentColor via luminance
     val diaryBg = LocalThemeColors.current.diaryBg
+    val luminance = 0.299f * diaryBg.red + 0.587f * diaryBg.green + 0.114f * diaryBg.blue
+    val contentColor = if (luminance < 0.5f) Color.White else Color.Black
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = diaryBg,
             topBar = {
                 TopAppBar(
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = diaryBg),
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = diaryBg,
+                        titleContentColor = contentColor,
+                        navigationIconContentColor = contentColor,
+                        actionIconContentColor = contentColor
+                    ),
                     title = { Text(if (existingId.isEmpty()) "새 일기" else "일기 수정") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -153,8 +160,8 @@ fun DiaryEditorScreen(
                         .heightIn(min = 200.dp),
                     maxLines = Int.MAX_VALUE,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
+                        focusedTextColor = contentColor,
+                        unfocusedTextColor = contentColor,
                     )
                 )
                 // Design Ref: skill-test §FR-01 — 글자수 카운터
