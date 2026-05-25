@@ -77,9 +77,11 @@ fun DiaryEditorScreen(
         }
     }
 
-    // Design Ref: joyary-diary-style-fix §SC-01 — containerColor 제거, 시스템 테마 따라감
+    // Design Ref: diary-bg-color-sync — containerColor = diaryBg (읽기 화면과 동일 패턴)
+    val diaryBg = LocalThemeColors.current.diaryBg
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
+            containerColor = diaryBg,
             topBar = {
                 TopAppBar(
                     title = { Text(if (existingId.isEmpty()) "새 일기" else "일기 수정") },
@@ -110,13 +112,10 @@ fun DiaryEditorScreen(
                 )
             }
         ) { padding ->
-            // Design Ref: joyary-ux-improvements §FR-04 — 에디터 배경색 사용자 지정
-            val diaryBg = LocalThemeColors.current.diaryBg
             // Design Ref: joyary-upgrade-v6 §5.4 — imePadding으로 키보드 출현 시 스크롤 확보 (FR-07)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(diaryBg)
                     .padding(padding)
                     .imePadding()
                     .verticalScroll(rememberScrollState())
