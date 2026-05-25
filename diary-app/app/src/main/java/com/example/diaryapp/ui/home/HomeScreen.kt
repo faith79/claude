@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -235,7 +236,7 @@ private fun CalendarGrid(
         ) {
             items(cells) { day ->
                 if (day == null) {
-                    Box(Modifier.height(60.dp))
+                    Box(Modifier.height(76.dp))
                 } else {
                     val date = yearMonth.atDay(day).format(DateTimeFormatter.ISO_LOCAL_DATE)
                     val entry = diaryMap[date]
@@ -268,27 +269,26 @@ private fun DayCell(
 ) {
     val emotion = entry?.emotion
     val themeColors = LocalThemeColors.current
-    // Design Ref: joey-ui-material-you §FR-03 — 오늘 날짜: solid primary 원형 강조
-    val bgColor = when {
-        isToday -> MaterialTheme.colorScheme.primary
-        else -> Color.Transparent
-    }
 
     // Plan SC: FR-08 — 토요일 파랑, 일요일 빨강; Plan SC: SC-05 — 평일 weekdayColor 적용
+    // Design Ref: calendar-daycell-fix §FR-05 — 오늘 날짜: primary 색 (테두리와 동일)
     val dateColor = when {
-        isToday -> MaterialTheme.colorScheme.onPrimary
+        isToday -> MaterialTheme.colorScheme.primary
         dayOfWeek == DayOfWeek.SATURDAY -> DateSaturday
         dayOfWeek == DayOfWeek.SUNDAY -> DateSunday
         else -> weekdayColor
     }
 
-    // Design Ref: calendar-diary-bg-fix §FR-01 — 셀 내용 상단 정렬
+    // Design Ref: calendar-daycell-fix §FR-01/FR-03 — 76dp 높이 + 빈 네모 테두리(오늘)
     Column(
         modifier = Modifier
-            .height(60.dp)
+            .height(76.dp)
             .padding(2.dp)
-            .clip(CircleShape)
-            .background(bgColor)
+            .border(
+                width = if (isToday) 2.dp else 0.dp,
+                color = if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = RoundedCornerShape(4.dp)
+            )
             .clickable(onClick = onClick)
             .padding(top = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
