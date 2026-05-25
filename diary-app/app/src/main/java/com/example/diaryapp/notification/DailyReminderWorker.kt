@@ -37,7 +37,7 @@ class DailyReminderWorker @AssistedInject constructor(
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("오늘 일기를 작성하세요!")
             .setContentText("하루를 기록하고 감정을 남겨보세요.")
             .setContentIntent(pendingIntent)

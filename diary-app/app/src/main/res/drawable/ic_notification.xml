@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 5-pointed star — 앱 아이콘과 동일한 별 모양, 흰색 단색 (알림 소형 아이콘용) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 54,26 L 59.3,40.7 L 74.9,41.2 L 62.6,50.8 L 66.9,65.8 L 54,57 L 41.1,65.8 L 45.4,50.8 L 33.1,41.2 L 48.7,40.7 Z" />
+
+</vector>

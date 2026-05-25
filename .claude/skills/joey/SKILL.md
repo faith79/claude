@@ -7,8 +7,8 @@ effort: high
 description: |
   Full-auto PDCA pipeline with user-defined quality gate. Runs plan→design→do→analyze→report
   sequentially. Iterates the analyze→fix loop until match rate reaches the target threshold.
-  After report: pushes to git. Always pushes — no skip conditions.
-  First argument is optional target % (default 90). No user confirmations at any checkpoint.
+  No git push after report.
+  First argument is optional target % (default 100). No user confirmations at any checkpoint.
   Triggers: /joey, joey, 자동 PDCA, 풀 파이프라인, auto pipeline, quality gate.
 argument-hint: "[target%] <feature-request>"
 user-invocable: true
@@ -44,7 +44,7 @@ task-template: "[Joey/{threshold}%] {feature}"
 
 | Position | Type | Default | Description |
 |----------|------|---------|-------------|
-| `[target%]` | Integer 1–100 | `90` | Required match rate before report is generated |
+| `[target%]` | Integer 1–100 | `100` | Required match rate before report is generated |
 | `<feature-request>` | String | — | Natural-language description of what to build |
 
 **Parsing rule**: If the first token is a pure integer (no letters), treat it as `target%`.
@@ -52,8 +52,7 @@ Everything else is the feature request.
 
 ```bash
 /joey 95 로그인 화면 추가해줘        # threshold=95, request="로그인 화면 추가해줘"
-/joey 100 이미지 압축 버그 수정      # threshold=100, all criteria must be met
-/joey 이미지 업로드 기능             # threshold=90 (default), request="이미지 업로드 기능"
+/joey 이미지 업로드 기능             # threshold=100 (default), request="이미지 업로드 기능"
 /joey 80 빠른 프로토타입 만들어줘   # threshold=80, accepts lower bar
 ```
 
@@ -93,7 +92,7 @@ All other checkpoints (CP-1 through CP-5) remain fully automatic.
 
 1. **Parse arguments:**
    - If first token is a pure integer N (e.g., `95`): `threshold = N`, `request = remaining text`
-   - Otherwise: `threshold = 90`, `request = full argument`
+   - Otherwise: `threshold = 100`, `request = full argument`
    - Clamp threshold: `threshold = max(1, min(100, threshold))`
 
 2. **Extract feature name** — kebab-case slug from request:
@@ -367,101 +366,6 @@ LOOP:
 
 ---
 
-### Step 6 — Git Push
-
-#### 6-1. Get Current Branch
-
-```bash
-git branch --show-current
-```
-
-Store result as `{branch}`. If empty (detached HEAD), use `git rev-parse --abbrev-ref HEAD`.
-
-#### 6-2. Stage All Changes (Windows-safe)
-
-Stage only source files and docs — **never use `git add -u`** (it stages tracked build artifacts):
-
-```bash
-# Stage only safe source directories (no build artifacts)
-git add docs/
-git add .bkit/runtime/joey-log.json
-git add .claude/skills/
-git add diary-app/app/src/
-git add CLAUDE.md
-```
-
-Safety net — in case build artifacts were previously staged, unstage them:
-```bash
-git restore --staged diary-app/app/build/ 2>/dev/null || true
-git restore --staged diary-app/.gradle/ 2>/dev/null || true
-```
-
-Then verify:
-```bash
-git status --short
-```
-
-**If nothing is staged BUT there ARE unpushed commits** (git log shows ahead):
-- Skip commit step, go directly to 6-3 Push.
-
-#### 6-3. Commit
-
-```bash
-git commit -m "feat({featureName}): Joey auto-PDCA complete [{finalMatchRate}%]
-
-- PDCA pipeline: plan → design → do → analyze → report
-- Quality gate: {finalMatchRate}% (target: {threshold}%)
-- Iterations: {N}/{maxIterations}
-
-Co-Authored-By: Joey Auto-PDCA <joey@bkit>"
-```
-
-#### 6-4. Push to Current Branch
-
-Always push explicitly to the current branch on `origin`:
-
-```bash
-git push origin {branch}
-```
-
-**On success:**
-```
-[Git Push ✅] {branch} → origin/{branch}
-```
-Log `gitStatus: "pushed"`, `gitBranch: "{branch}"`
-
-**On failure — upstream not set:**
-```bash
-git push --set-upstream origin {branch}
-```
-If this succeeds, treat as success and log `gitStatus: "pushed-with-upstream"`.
-
-**On failure — diverged (non-fast-forward):**
-```bash
-git pull --rebase origin {branch}
-git push origin {branch}
-```
-If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
-
-**On any other failure:**
-- Print the error output
-- Print:
-  ```
-  [Git Push ⚠️] Push 실패. 아래를 확인해주세요:
-    git remote -v                              # 원격 저장소 연결 확인
-    git push origin {branch}                  # 현재 브랜치로 직접 push
-    git push --set-upstream origin {branch}   # upstream 미설정 시
-    git pull --rebase origin {branch} && git push origin {branch}  # 충돌 시
-  ```
-- Log `gitStatus: "failed"`, `gitError: "{error-summary}"`
-
-**Progress:**
-```
-[6/6] GIT PUSH ✅/⚠️  {branch} → origin/{branch}
-```
-
----
-
 ### Final Summary
 
 ```
@@ -477,8 +381,6 @@ If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
 ║  Design:  docs/02-design/features/{featureName}.design.md      ║
 ║  Report:  docs/04-report/features/{featureName}.report.md      ║
 ║  Log:     .bkit/runtime/joey-log.json                          ║
-╠══════════════════════════════════════════════════════════════════╣
-║  Git:     {branch} → origin/{branch}  {gitStatus}              ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -504,9 +406,7 @@ If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
     { "iteration": 2, "matchRate": 96, "gapsFound": 0, "gapsFixed": 0 }
   ],
   "finalMatchRate": 96,
-  "status": "completed",
-  "gitStatus": "pushed",
-  "gitBranch": "main"
+  "status": "completed"
 }
 ```
 
@@ -530,16 +430,16 @@ If this succeeds, treat as success and log `gitStatus: "pushed-after-rebase"`.
 | threshold | When to use |
 |-----------|------------|
 | `80` | 빠른 프로토타입 — 대략적 동작 확인 |
-| `90` | 기본값 — 일반 기능 개발 (권장) |
+| `90` | 일반 기능 개발 |
 | `95` | 중요 기능 — 결제, 인증 등 |
-| `100` | 완전 검증 — 모든 SC 충족 필수 |
+| `100` | 기본값 — 완전 검증 (권장) |
 
 ---
 
 ## Examples
 
 ```bash
-# 기본 품질 기준 (90%)
+# 기본 품질 기준 (100%)
 /joey 조이어리 앱에 다크모드 추가
 
 # 95% 기준 — 중요 기능

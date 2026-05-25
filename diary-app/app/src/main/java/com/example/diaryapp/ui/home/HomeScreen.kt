@@ -17,7 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,8 +63,6 @@ fun HomeScreen(
     val initialPage = (now.year - BASE_YEAR) * 12 + (now.monthValue - 1)
 
     val pagerState = rememberPagerState(initialPage = initialPage) { TOTAL_PAGES }
-    // Design Ref: joey-ui-material-you §FR-01 — LargeTopAppBar 스크롤 시 접힘
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     fun pageToYearMonth(page: Int): YearMonth =
         YearMonth.of(BASE_YEAR + page / 12, page % 12 + 1)
@@ -85,22 +82,18 @@ fun HomeScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            // Design Ref: joey-ui-material-you §FR-01 — LargeTopAppBar (접히는 큰 헤더)
-            LargeTopAppBar(
+            TopAppBar(
                 title = { Text("조이어리") },
                 actions = {
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Default.Settings, "설정")
                     }
-                },
-                scrollBehavior = scrollBehavior
+                }
             )
         },
         floatingActionButton = {
-            // Design Ref: joey-ui-material-you §FR-02 — ExtendedFAB (텍스트 레이블 포함)
-            ExtendedFloatingActionButton(
+            FloatingActionButton(
                 onClick = {
                     scope.launch {
                         val todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
@@ -111,10 +104,10 @@ fun HomeScreen(
                             onAddDiary(todayDate)
                         }
                     }
-                },
-                icon = { Icon(Icons.Default.Add, "일기 추가") },
-                text = { Text("오늘 일기 쓰기") }
-            )
+                }
+            ) {
+                Icon(Icons.Default.Add, "일기 추가")
+            }
         }
     ) { padding ->
         // Design Ref: §5.1 — 달력 고정(상단) + 아래 영역 weight(1f) (FR-02)
