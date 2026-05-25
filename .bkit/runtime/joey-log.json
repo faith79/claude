@@ -1,5 +1,5 @@
 {
-  "feature": "diary-bg-color-sync",
+  "feature": "editor-bg-theme-color",
   "threshold": 100,
   "startedAt": "2026-05-25T00:00:00.000Z",
   "completedAt": "2026-05-25T00:00:00.000Z",
@@ -7,7 +7,7 @@
     { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 3, "decision": "option-c", "reason": "pragmatic-default" },
-    { "checkpoint": 4, "decision": "auto-approve", "filesChanged": 1 }
+    { "checkpoint": 4, "decision": "auto-approve", "filesChanged": 3 }
   ],
   "iterations": [
     { "iteration": 1, "matchRate": 100, "gapsFound": 0, "gapsFixed": 0 }

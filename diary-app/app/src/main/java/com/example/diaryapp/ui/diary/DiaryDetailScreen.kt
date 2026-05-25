@@ -156,11 +156,14 @@ private fun DiaryPageContent(
     // Design Ref: joyary-upgrade-v7 §3.1 — Int? 인덱스로 관리 (null=닫힘, N=N번째 이미지 확대)
     var selectedImageIndex by remember { mutableStateOf<Int?>(null) }
     val overlayImages = entry?.imageUrls ?: emptyList()
+    val diaryBg = LocalThemeColors.current.diaryBg
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
+            containerColor = diaryBg,
             topBar = {
                 TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = diaryBg),
                     // Design Ref: joyary-upgrade-v6 §5.2 — 날짜 옆 요일 표시 (FR-03)
                     title = { Text(formatDateWithDay(date)) },
                     navigationIcon = {

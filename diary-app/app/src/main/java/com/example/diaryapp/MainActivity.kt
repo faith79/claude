@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
             DiaryAppTheme(colorScheme = template.colorScheme) {
                 CompositionLocalProvider(
                     LocalThemeColors provides template.themeColors.copy(
-                        diaryBg = template.themeColors.appBg,
+                        diaryBg = template.themeColors.calendarBg,
                         weekdayColor = weekday
                     )
                 ) {

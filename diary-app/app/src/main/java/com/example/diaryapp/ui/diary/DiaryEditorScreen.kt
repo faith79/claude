@@ -84,6 +84,7 @@ fun DiaryEditorScreen(
             containerColor = diaryBg,
             topBar = {
                 TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = diaryBg),
                     title = { Text(if (existingId.isEmpty()) "새 일기" else "일기 수정") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {

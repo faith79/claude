@@ -1,0 +1,95 @@
+{
+  "timestamp": "2026-05-25T11:19:34.726Z",
+  "reason": "compaction",
+  "status": {
+    "version": "3.0",
+    "lastUpdated": "2026-05-23T00:00:00.000Z",
+    "activeFeatures": [
+      "joyary-upgrade-v10"
+    ],
+    "primaryFeature": "joyary-upgrade-v10",
+    "features": {
+      "joyary-upgrade-v6": {
+        "phase": "completed",
+        "startedAt": "2026-05-23T00:00:00.000Z",
+        "completedAt": "2026-05-23T00:00:00.000Z",
+        "matchRate": 100,
+        "iterationCount": 0,
+        "planPath": "docs/01-plan/features/joyary-upgrade-v6.plan.md",
+        "reportPath": "docs/04-report/features/joyary-upgrade-v6.report.md"
+      },
+      "joyary-upgrade-v7": {
+        "phase": "completed",
+        "startedAt": "2026-05-23T00:00:00.000Z",
+        "completedAt": "2026-05-23T00:00:00.000Z",
+        "matchRate": 100,
+        "iterationCount": 0,
+        "planPath": "docs/01-plan/features/joyary-upgrade-v7.plan.md",
+        "reportPath": "docs/04-report/features/joyary-upgrade-v7.report.md"
+      },
+      "image-compression-fix": {
+        "phase": "completed",
+        "startedAt": "2026-05-23T00:00:00.000Z",
+        "completedAt": "2026-05-23T00:00:00.000Z",
+        "matchRate": 100,
+        "iterationCount": 0,
+        "planPath": "docs/01-plan/features/image-compression-fix.plan.md",
+        "reportPath": "docs/04-report/features/image-compression-fix.report.md"
+      },
+      "joyary-upgrade-v8": {
+        "phase": "completed",
+        "startedAt": "2026-05-23T00:00:00.000Z",
+        "completedAt": "2026-05-23T00:00:00.000Z",
+        "matchRate": 100,
+        "iterationCount": 1,
+        "planPath": "docs/01-plan/features/joyary-upgrade-v8.plan.md",
+        "reportPath": "docs/04-report/features/joyary-upgrade-v8.report.md"
+      },
+      "joyary-upgrade-v9": {
+        "phase": "completed",
+        "startedAt": "2026-05-23T00:00:00.000Z",
+        "completedAt": "2026-05-23T00:00:00.000Z",
+        "matchRate": 100,
+        "iterationCount": 1,
+        "planPath": "docs/01-plan/features/joyary-upgrade-v9.plan.md",
+        "reportPath": "docs/04-report/features/joyary-upgrade-v9.report.md"
+      },
+      "joyary-upgrade-v10": {
+        "phase": "completed",
+        "startedAt": "2026-05-23T00:00:00.000Z",
+        "completedAt": "2026-05-23T00:00:00.000Z",
+        "matchRate": 100,
+        "iterationCount": 1,
+        "planPath": "docs/01-plan/features/joyary-upgrade-v10.plan.md",
+        "reportPath": "docs/04-report/features/joyary-upgrade-v10.report.md"
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": []
+    },
+    "session": {
+      "startedAt": "2026-05-04T14:09:18.111Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-05-04T14:09:54.694Z"
+    },
+    "history": [],
+    "stateMachine": {
+      "defaultWorkflow": "default",
+      "activeWorkflows": {},
+      "totalTransitions": 0
+    },
+    "automation": {
+      "globalLevel": 2,
+      "trustScore": 40,
+      "pendingApprovals": 0,
+      "lastGateResult": null
+    },
+    "team": {
+      "enabled": true,
+      "stateFile": ".bkit/runtime/agent-state.json",
+      "eventsFile": ".bkit/runtime/agent-events.jsonl"
+    }
+  }
+}
