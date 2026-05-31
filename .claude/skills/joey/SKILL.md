@@ -19,6 +19,7 @@ allowed-tools:
   - Glob
   - Grep
   - Bash
+  - PowerShell
   - AskUserQuestion
 imports: []
 next-skill: null
@@ -244,7 +245,7 @@ Header: "디자인 선택"
 
 **Progress:**
 ```
-[1/5] PLAN ✅  {featureName}.plan.md
+[1/6] PLAN ✅  {featureName}.plan.md
       Threshold: {threshold}% | Decisions auto-approved: CP-1, CP-2
 ```
 
@@ -263,7 +264,7 @@ Header: "디자인 선택"
 
 **Progress:**
 ```
-[2/5] DESIGN ✅  {featureName}.design.md
+[2/6] DESIGN ✅  {featureName}.design.md
       Architecture: Option C (Pragmatic Balance) | CP-3 auto-selected
 ```
 
@@ -283,7 +284,7 @@ Header: "디자인 선택"
 
 **Progress:**
 ```
-[3/5] DO ✅  {N} files modified, {M} files created
+[3/6] DO ✅  {N} files modified, {M} files created
       CP-4 auto-approved | Design Ref comments added
 ```
 
@@ -337,7 +338,7 @@ LOOP:
 
 **Progress:**
 ```
-[4/5] ANALYZE ✅  Match Rate: {matchRate}% (target: {threshold}%)
+[4/6] ANALYZE ✅  Match Rate: {matchRate}% (target: {threshold}%)
       Iterations: {N} | Gaps fixed: {M} | Status: PASSED / WARNING
 ```
 
@@ -361,7 +362,47 @@ LOOP:
 
 **Progress:**
 ```
-[5/5] REPORT ✅  {featureName}.report.md
+[5/6] REPORT ✅  {featureName}.report.md
+```
+
+---
+
+### Step 6 — APK BUILD Phase (Debug)
+
+조이어리 앱 수정 후 항상 Debug APK를 자동 빌드한다.
+
+#### 빌드 명령
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+Set-Location "D:\GIT\claude\diary-app"
+.\gradlew.bat assembleDebug
+```
+
+#### 빌드 결과 확인
+
+빌드 성공 시 출력 경로:
+```
+D:\GIT\claude\diary-app\app\build\outputs\apk\debug\app-debug.apk
+```
+
+성공 여부는 `BUILD SUCCESSFUL` 문자열 포함 여부로 판단.
+
+#### 빌드 실패 시
+
+- `JAVA_HOME` 오류: Android Studio JBR 경로 재확인 후 재시도
+- Gradle 컴파일 오류: 오류 메시지 출력 후 리포트에 ⚠️ BUILD FAILED 기록, 파이프라인은 완료 처리
+
+#### Session log 업데이트
+
+```json
+{ "apkBuild": { "status": "success" | "failed", "apkPath": "...", "sizeBytes": N } }
+```
+
+**Progress:**
+```
+[6/6] BUILD ✅  app-debug.apk ({size} MB)
+      Path: app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
@@ -381,6 +422,8 @@ LOOP:
 ║  Design:  docs/02-design/features/{featureName}.design.md      ║
 ║  Report:  docs/04-report/features/{featureName}.report.md      ║
 ║  Log:     .bkit/runtime/joey-log.json                          ║
+╠══════════════════════════════════════════════════════════════════╣
+║  APK:     app/build/outputs/apk/debug/app-debug.apk  ✅        ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -406,7 +449,12 @@ LOOP:
     { "iteration": 2, "matchRate": 96, "gapsFound": 0, "gapsFixed": 0 }
   ],
   "finalMatchRate": 96,
-  "status": "completed"
+  "status": "completed",
+  "apkBuild": {
+    "status": "success",
+    "apkPath": "app/build/outputs/apk/debug/app-debug.apk",
+    "sizeBytes": 23319750
+  }
 }
 ```
 
@@ -422,6 +470,9 @@ LOOP:
 | Code error introduced by fix | Revert that fix; mark gap as "manual-required"; continue |
 | matchRate < threshold after 5 iterations | Proceed with ⚠️ warning; list unresolved gaps in report |
 | File write error | Retry once; if fails, report error and stop |
+| APK build: JAVA_HOME not set | Set `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"` and retry |
+| APK build: Gradle compile error | Print error, record ⚠️ BUILD FAILED in report, pipeline still completes |
+| APK build: gradlew.bat not found | Skip APK step, warn in report |
 
 ---
 

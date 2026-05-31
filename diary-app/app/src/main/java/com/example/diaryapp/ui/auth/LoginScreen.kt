@@ -3,6 +3,8 @@ package com.example.diaryapp.ui.auth
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -96,7 +98,7 @@ fun LoginScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("내 일기장") }
+                    title = { Text("조이어리") }
                 )
             }
         ) { padding ->
@@ -104,8 +106,9 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 32.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("오늘의 감정을 기록하세요", style = MaterialTheme.typography.bodyMedium,
