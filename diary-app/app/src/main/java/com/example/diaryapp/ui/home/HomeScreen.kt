@@ -13,10 +13,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -139,16 +138,17 @@ fun HomeScreen(
                         monthlyDiaryMap[monthKey]?.associateBy { it.date } ?: emptyMap()
                     }
                     Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                        // Design Ref: settings-defaults-calendar-year-nav §CHANGE-03 — 년 단위 이동
                         CalendarHeader(
                             currentMonth = pageMonth,
                             onPrev = {
                                 scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                    pagerState.animateScrollToPage(pagerState.currentPage - 12)
                                 }
                             },
                             onNext = {
                                 scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 12)
                                 }
                             }
                         )
@@ -182,15 +182,20 @@ private fun CalendarHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Design Ref: settings-defaults-calendar-year-nav §CHANGE-04 — << >> 년 단위 UI
         IconButton(onClick = onPrev) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "이전 달")
+            Text("<<", style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(
             "${currentMonth.year}년 ${currentMonth.monthValue}월",
             style = MaterialTheme.typography.titleLarge
         )
         IconButton(onClick = onNext) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, "다음 달")
+            Text(">>", style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

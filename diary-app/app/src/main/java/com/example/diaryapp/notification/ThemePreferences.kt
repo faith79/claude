@@ -30,24 +30,27 @@ class ThemePreferences(context: Context) {
     }
 
     // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex 저장 (FR-05)
+    // Design Ref: settings-defaults-calendar-year-nav §CHANGE-01 — 기본값 미드나잇(20)
     var selectedTemplateIndex: Int
-        get() = prefs.getInt("selected_theme_index", 0)
+        get() = prefs.getInt("selected_theme_index", 20)
         set(value) { prefs.edit().putInt("selected_theme_index", value).apply() }
 
-    fun resetToDefault() { selectedTemplateIndex = 0 }
+    fun resetToDefault() { selectedTemplateIndex = 20 }
 
     // Design Ref: joyary-upgrade-v5 §3.3 — 일기 배경색 저장 (FR-05, FR-07)
+    // Design Ref: settings-defaults-calendar-year-nav §CHANGE-01 — 기본값 검정(0xFF000000)
     var diaryBgColor: Int
-        get() = prefs.getInt("diary_bg_color", 0xFFFFF8F0.toInt())
+        get() = prefs.getInt("diary_bg_color", 0xFF000000.toInt())
         set(value) { prefs.edit().putInt("diary_bg_color", value).apply() }
 
     // Design Ref: joyary-upgrade-v5 §3.3 — 평일 글씨색 저장 (FR-06, FR-07)
+    // Design Ref: settings-defaults-calendar-year-nav §CHANGE-01 — 기본값 흰색(0xFFFFFFFF)
     var weekdayColor: Int
-        get() = prefs.getInt("weekday_color", 0xFF424242.toInt())
+        get() = prefs.getInt("weekday_color", 0xFFFFFFFF.toInt())
         set(value) { prefs.edit().putInt("weekday_color", value).apply() }
 
     fun resetDiaryColors() {
-        diaryBgColor = 0xFFFFF8F0.toInt()
-        weekdayColor = 0xFF424242.toInt()
+        diaryBgColor = 0xFF000000.toInt()
+        weekdayColor = 0xFFFFFFFF.toInt()
     }
 }

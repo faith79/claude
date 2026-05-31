@@ -91,9 +91,10 @@ class SettingsViewModel @Inject constructor(
         _selectedTemplateIndex.value = index
     }
 
+    // Design Ref: settings-defaults-calendar-year-nav §CHANGE-02 — 기본값 미드나잇(20)
     fun resetThemeTemplate() {
         themePreferences.resetToDefault()
-        _selectedTemplateIndex.value = 0
+        _selectedTemplateIndex.value = 20
     }
 
     // Design Ref: joyary-upgrade-v5 §3.1 — 일기 배경색 StateFlow (FR-05, FR-07)
