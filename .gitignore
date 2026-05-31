@@ -1,15 +1,2 @@
 # Java heap dumps
 *.hprof
-
-# Android build artifacts
-diary-app/app/build/
-diary-app/build/
-diary-app/.gradle/
-diary-app/app/build/outputs/apk/
-
-# APK / AAB binaries
-*.apk
-*.aab
-
-# bkit runtime (session state, not source)
-diary-app/.bkit/runtime/
