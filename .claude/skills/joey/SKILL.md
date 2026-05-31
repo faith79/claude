@@ -245,7 +245,7 @@ Header: "디자인 선택"
 
 **Progress:**
 ```
-[1/6] PLAN ✅  {featureName}.plan.md
+[1/7] PLAN ✅  {featureName}.plan.md
       Threshold: {threshold}% | Decisions auto-approved: CP-1, CP-2
 ```
 
@@ -264,7 +264,7 @@ Header: "디자인 선택"
 
 **Progress:**
 ```
-[2/6] DESIGN ✅  {featureName}.design.md
+[2/7] DESIGN ✅  {featureName}.design.md
       Architecture: Option C (Pragmatic Balance) | CP-3 auto-selected
 ```
 
@@ -284,7 +284,7 @@ Header: "디자인 선택"
 
 **Progress:**
 ```
-[3/6] DO ✅  {N} files modified, {M} files created
+[3/7] DO ✅  {N} files modified, {M} files created
       CP-4 auto-approved | Design Ref comments added
 ```
 
@@ -338,7 +338,7 @@ LOOP:
 
 **Progress:**
 ```
-[4/6] ANALYZE ✅  Match Rate: {matchRate}% (target: {threshold}%)
+[4/7] ANALYZE ✅  Match Rate: {matchRate}% (target: {threshold}%)
       Iterations: {N} | Gaps fixed: {M} | Status: PASSED / WARNING
 ```
 
@@ -362,7 +362,7 @@ LOOP:
 
 **Progress:**
 ```
-[5/6] REPORT ✅  {featureName}.report.md
+[5/7] REPORT ✅  {featureName}.report.md
 ```
 
 ---
@@ -401,8 +401,56 @@ D:\GIT\claude\diary-app\app\build\outputs\apk\debug\app-debug.apk
 
 **Progress:**
 ```
-[6/6] BUILD ✅  app-debug.apk ({size} MB)
+[6/7] BUILD ✅  app-debug.apk ({size} MB)
       Path: app/build/outputs/apk/debug/app-debug.apk
+```
+
+---
+
+### Step 7 — COMMIT & PUSH
+
+APK 빌드 완료 후 수정된 소스 파일과 PDCA 문서를 자동 커밋·푸시한다.
+
+#### 스테이징 대상
+
+- 수정된 소스 파일 (DO 단계에서 변경한 `.kt`, `.xml` 등)
+- PDCA 문서:
+  - `docs/01-plan/features/{featureName}.plan.md`
+  - `docs/02-design/features/{featureName}.design.md`
+  - `docs/03-analysis/{featureName}.analysis.md`
+  - `docs/04-report/features/{featureName}.report.md`
+  - `.bkit/runtime/joey-log.json`
+  - `.bkit/state/` 변경분
+
+#### 커밋 메시지 규칙
+
+- 변경 내용을 분석하여 한 줄 요약 생성
+- 형식: `feat|fix|perf|refactor: {featureName} — {한 줄 요약}`
+
+#### 실행 명령
+
+```powershell
+cd "D:\GIT\claude"
+git add <변경된 소스 파일들>
+git add "docs/01-plan/features/{featureName}.plan.md"
+git add "docs/02-design/features/{featureName}.design.md"
+git add "docs/03-analysis/{featureName}.analysis.md"
+git add "docs/04-report/features/{featureName}.report.md"
+git add ".bkit/runtime/joey-log.json"
+git commit -m "<type>: {featureName} — {한 줄 요약}"
+git push origin main
+```
+
+#### 주의 사항
+
+- 빌드 아티팩트(`.gradle/`, `app/build/` 디렉터리)는 스테이징하지 않음
+- `git add -A` 또는 `git add .` 사용 금지 — 변경 파일 목록을 명시적으로 지정
+- push 실패 시 리포트에 ⚠️ PUSH FAILED 기록, 파이프라인은 완료 처리
+
+**Progress:**
+```
+[7/7] PUSH ✅  {N} files committed & pushed → origin/main
+      Commit: <type>: {featureName} — {한 줄 요약}
 ```
 
 ---
@@ -424,6 +472,7 @@ D:\GIT\claude\diary-app\app\build\outputs\apk\debug\app-debug.apk
 ║  Log:     .bkit/runtime/joey-log.json                          ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  APK:     app/build/outputs/apk/debug/app-debug.apk  ✅        ║
+║  Push:    origin/main ✅  <type>: {featureName} — {요약}       ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -473,6 +522,8 @@ D:\GIT\claude\diary-app\app\build\outputs\apk\debug\app-debug.apk
 | APK build: JAVA_HOME not set | Set `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"` and retry |
 | APK build: Gradle compile error | Print error, record ⚠️ BUILD FAILED in report, pipeline still completes |
 | APK build: gradlew.bat not found | Skip APK step, warn in report |
+| git push: rejected (non-fast-forward) | `git pull --rebase origin main` 후 재시도; 실패 시 ⚠️ PUSH FAILED 기록 |
+| git push: no remote | warn in report, skip push |
 
 ---
 
