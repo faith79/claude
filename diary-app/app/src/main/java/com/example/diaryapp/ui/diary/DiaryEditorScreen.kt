@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -113,7 +114,9 @@ fun DiaryEditorScreen(
                                     existingImageUrls = existingImageUrls
                                 )
                             },
-                            enabled = content.isNotBlank() && !isLoading
+                            // Design Ref: emotion-weather-limit-required §CHANGE-01 — 감정·날씨·내용 필수
+                            enabled = content.isNotBlank() && selectedEmotions.isNotEmpty()
+                                && selectedWeathers.isNotEmpty() && !isLoading
                         ) {
                             Icon(Icons.Default.Check, "저장")
                         }
@@ -137,21 +140,25 @@ fun DiaryEditorScreen(
                 )
                 Spacer(Modifier.height(12.dp))
 
+                // Design Ref: emotion-weather-limit-required §CHANGE-02 — maxReached 전달
                 EmotionSelector(
                     selected = selectedEmotions,
                     onSelect = { em ->
                         selectedEmotions = if (em in selectedEmotions) selectedEmotions - em else selectedEmotions + em
-                    }
+                    },
+                    maxReached = selectedEmotions.size >= 3
                 )
 
                 Spacer(Modifier.height(16.dp))
 
                 // Plan SC: SC-03 — 감정 태그 아래 날씨 탭 배치
+                // Design Ref: emotion-weather-limit-required §CHANGE-03 — maxReached 전달
                 WeatherSelector(
                     selected = selectedWeathers,
                     onSelect = { w ->
                         selectedWeathers = if (w in selectedWeathers) selectedWeathers - w else selectedWeathers + w
-                    }
+                    },
+                    maxReached = selectedWeathers.size >= 3
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -218,17 +225,28 @@ fun DiaryEditorScreen(
 }
 
 // Design Ref: multi-emotion-weather-select §CHANGE-05 — Set 기반 다중 선택
+// Design Ref: emotion-weather-limit-required §CHANGE-04 — maxReached, 카운트 헤더, alpha dimming
 @Composable
 private fun EmotionSelector(
     selected: Set<EmotionTag>,
-    onSelect: (EmotionTag) -> Unit
+    onSelect: (EmotionTag) -> Unit,
+    maxReached: Boolean = false
 ) {
     Column {
-        Text(
-            "오늘의 감정",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "오늘의 감정",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                "(${selected.size}/3)",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected.isEmpty()) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Spacer(Modifier.height(8.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -236,10 +254,12 @@ private fun EmotionSelector(
         ) {
             EmotionTag.entries.forEach { emotion ->
                 val isSelected = emotion in selected
+                val isClickable = isSelected || !maxReached
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .weight(1f)
+                        .alpha(if (!isSelected && maxReached) 0.38f else 1f)
                         .clip(RoundedCornerShape(8.dp))
                         .background(
                             if (isSelected) MaterialTheme.colorScheme.primaryContainer
@@ -251,7 +271,7 @@ private fun EmotionSelector(
                             else MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(8.dp)
                         )
-                        .clickable { onSelect(emotion) }
+                        .clickable(enabled = isClickable) { onSelect(emotion) }
                         .padding(vertical = 8.dp)
                 ) {
                     Text(emotion.emoji, style = MaterialTheme.typography.titleMedium)
