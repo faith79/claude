@@ -11,7 +11,15 @@
       "Skill(bkit:pdca)",
       "Skill(bkit:pdca-fast-track)",
       "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; cd \"D:\\\\GIT\\\\claude\\\\diary-app\"; .\\\\gradlew.bat assembleDebug --no-daemon 2>&1)",
-      "PowerShell(Set-Content *)"
+      "PowerShell(Set-Content *)",
+      "Bash(./gradlew assembleDebug)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\"; Set-Location \"D:\\\\GIT\\\\claude\\\\diary-app\"; .\\\\gradlew.bat assembleDebug 2>&1)",
+      "Bash(git push *)",
+      "Bash(git rm *)",
+      "Bash(git revert *)",
+      "Bash(timeout 30 bash -c 'while [ -f .git/index.lock ]; do sleep 1; done; echo \"lock released\"')",
+      "Bash(Remove-Item *)",
+      "PowerShell($start = Get-Date; while \\(Test-Path \"D:\\\\GIT\\\\claude\\\\.git\\\\index.lock\"\\) { Start-Sleep -Seconds 2; if \\(\\(\\(Get-Date\\) - $start\\).TotalSeconds -gt 60\\) { Write-Host \"timeout\"; break } }; if \\(-not \\(Test-Path \"D:\\\\GIT\\\\claude\\\\.git\\\\index.lock\"\\)\\) { Write-Host \"lock released\" })"
     ]
   }
 }
