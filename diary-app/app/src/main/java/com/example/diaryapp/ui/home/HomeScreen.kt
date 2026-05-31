@@ -55,7 +55,8 @@ fun HomeScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val userId = authViewModel.currentUserId
-    val diaries by diaryViewModel.diaries.collectAsStateWithLifecycle()
+    // Design Ref: calendar-swipe-performance §CHANGE-06 — 달별 독립 소비, diaries 단일맵 제거
+    val monthlyDiaryMap by diaryViewModel.monthlyDiaryMap.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     val BASE_YEAR = 2000
@@ -68,18 +69,19 @@ fun HomeScreen(
     fun pageToYearMonth(page: Int): YearMonth =
         YearMonth.of(BASE_YEAR + page / 12, page % 12 + 1)
 
+    // Design Ref: calendar-swipe-performance §CHANGE-05 — currentPage 트리거로 스와이프 50% 시점 로딩
+    LaunchedEffect(pagerState.currentPage, userId) {
+        if (userId.isNotEmpty()) {
+            diaryViewModel.loadMonth(userId, pageToYearMonth(pagerState.currentPage))
+        }
+    }
+    // Design Ref: calendar-swipe-performance §CHANGE-05 — 정착 후 인접 달 선로딩
     LaunchedEffect(pagerState.settledPage, userId) {
         if (userId.isNotEmpty()) {
             val current = pageToYearMonth(pagerState.settledPage)
-            diaryViewModel.loadMonth(userId, current)
-            // Design Ref: joyary-ux-improvements §FR-03 — 인접 달 미리 불러오기
             diaryViewModel.prefetchMonth(userId, current.minusMonths(1))
             diaryViewModel.prefetchMonth(userId, current.plusMonths(1))
         }
-    }
-
-    val diaryMap = remember(diaries) {
-        diaries.associateBy { it.date }
     }
 
     Scaffold(
@@ -131,6 +133,11 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) { page ->
                     val pageMonth = pageToYearMonth(page)
+                    // Design Ref: calendar-swipe-performance §CHANGE-06 — 각 페이지 독립 슬라이스
+                    val monthKey = "${userId}_${pageMonth}"
+                    val diaryMap = remember(monthlyDiaryMap, monthKey) {
+                        monthlyDiaryMap[monthKey]?.associateBy { it.date } ?: emptyMap()
+                    }
                     Column(modifier = Modifier.padding(bottom = 8.dp)) {
                         CalendarHeader(
                             currentMonth = pageMonth,

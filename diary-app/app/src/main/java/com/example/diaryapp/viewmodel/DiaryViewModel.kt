@@ -54,6 +54,10 @@ class DiaryViewModel @Inject constructor(
     private val _entryMap = MutableStateFlow<Map<String, DiaryEntry?>>(emptyMap())
     val entryMap: StateFlow<Map<String, DiaryEntry?>> = _entryMap.asStateFlow()
 
+    // Design Ref: calendar-swipe-performance §CHANGE-01 — 달별 다이어리 맵, 각 캘린더 페이지 독립 소비
+    private val _monthlyDiaryMap = MutableStateFlow<Map<String, List<DiaryEntry>>>(emptyMap())
+    val monthlyDiaryMap: StateFlow<Map<String, List<DiaryEntry>>> = _monthlyDiaryMap.asStateFlow()
+
     private val _searchResults = MutableStateFlow<List<DiaryEntry>>(emptyList())
     val searchResults: StateFlow<List<DiaryEntry>> = _searchResults.asStateFlow()
 
@@ -77,12 +81,17 @@ class DiaryViewModel @Inject constructor(
         _currentMonth.value = yearMonth
         val key = "${userId}_${yearMonth}"
         // Design Ref: joyary-upgrade-v8 §4.3 — L1(메모리) → L2(디스크) → Firestore (SC-02)
-        memMonthCache[key]?.let { _diaries.value = it; return }
+        // Design Ref: calendar-swipe-performance §CHANGE-03 — L1 히트 시 monthlyDiaryMap도 갱신
+        memMonthCache[key]?.let {
+            warmEntryCache(userId, yearMonth, it)
+            _diaries.value = it
+            return
+        }
         // Design Ref: joyary-upgrade-v9 §2.3 — L2 읽기/쓰기 IO dispatcher (SC-02)
         viewModelScope.launch {
             val cached = withContext(Dispatchers.IO) { localCache.getMonth(key) }
             if (cached != null) {
-                warmEntryCache(userId, cached)
+                warmEntryCache(userId, yearMonth, cached)
                 memMonthCache[key] = cached
                 _diaries.value = cached
                 return@launch
@@ -90,7 +99,7 @@ class DiaryViewModel @Inject constructor(
             try {
                 diaryRepository.getDiariesByMonth(userId, yearMonth).collect { list ->
                     // Design Ref: joyary-upgrade-v9 §2.3 — 월 로드 시 entry 선채움 (SC-04)
-                    warmEntryCache(userId, list)
+                    warmEntryCache(userId, yearMonth, list)
                     memMonthCache[key] = list
                     withContext(Dispatchers.IO) { localCache.putMonth(key, list) }
                     _diaries.value = list
@@ -103,7 +112,10 @@ class DiaryViewModel @Inject constructor(
 
     // Design Ref: joyary-upgrade-v9 §2.3 — 월 내 모든 entry를 memEntryCache에 선채움 (SC-04)
     // Design Ref: diary-detail-swipe-performance §design — entryMap도 동시 채우기 (R-04)
-    private fun warmEntryCache(userId: String, entries: List<DiaryEntry>) {
+    // Design Ref: calendar-swipe-performance §CHANGE-02 — monthlyDiaryMap 동시 채우기 (R-02,R-03)
+    private fun warmEntryCache(userId: String, yearMonth: YearMonth, entries: List<DiaryEntry>) {
+        val monthKey = "${userId}_${yearMonth}"
+        _monthlyDiaryMap.value = _monthlyDiaryMap.value + (monthKey to entries)
         val newMapEntries = mutableMapOf<String, DiaryEntry?>()
         entries.forEach { entry ->
             val entryKey = "${userId}_${entry.date}"
@@ -277,6 +289,7 @@ class DiaryViewModel @Inject constructor(
 
     // Design Ref: joyary-upgrade-v8 §4.5 — L1 + L2 동시 무효화 (SC-04)
     // Design Ref: diary-detail-swipe-performance §design — entryMap에서도 제거 (R-06)
+    // Design Ref: calendar-swipe-performance §CHANGE-04 — monthlyDiaryMap에서도 달 제거 (R-06)
     private fun invalidateCache(userId: String, date: String) {
         val yearMonth = date.substring(0, 7)
         val monthKey = "${userId}_${yearMonth}"
@@ -286,22 +299,27 @@ class DiaryViewModel @Inject constructor(
         localCache.removeMonth(monthKey)
         localCache.removeEntry(entryKey)
         _entryMap.value = _entryMap.value - date
+        _monthlyDiaryMap.value = _monthlyDiaryMap.value - monthKey
     }
 
     // Design Ref: joyary-ux-improvements §FR-03 — 인접 달 백그라운드 선로딩 (_diaries 미변경)
+    // Design Ref: calendar-swipe-performance §CHANGE-03 — monthlyDiaryMap 채우기로 UI 즉시 반영
     fun prefetchMonth(userId: String, yearMonth: YearMonth) {
         val key = "${userId}_${yearMonth}"
-        if (memMonthCache.containsKey(key)) return
+        if (memMonthCache.containsKey(key)) {
+            warmEntryCache(userId, yearMonth, memMonthCache[key]!!)
+            return
+        }
         viewModelScope.launch {
             val cached = withContext(Dispatchers.IO) { localCache.getMonth(key) }
             if (cached != null) {
-                warmEntryCache(userId, cached)
+                warmEntryCache(userId, yearMonth, cached)
                 memMonthCache[key] = cached
                 return@launch
             }
             try {
                 diaryRepository.getDiariesByMonth(userId, yearMonth).collect { list ->
-                    warmEntryCache(userId, list)
+                    warmEntryCache(userId, yearMonth, list)
                     memMonthCache[key] = list
                     withContext(Dispatchers.IO) { localCache.putMonth(key, list) }
                 }
