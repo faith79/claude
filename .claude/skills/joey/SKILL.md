@@ -393,21 +393,6 @@ D:\GIT\claude\diary-app\app\build\outputs\apk\debug\app-debug.apk
 - `JAVA_HOME` 오류: Android Studio JBR 경로 재확인 후 재시도
 - Gradle 컴파일 오류: 오류 메시지 출력 후 리포트에 ⚠️ BUILD FAILED 기록, 파이프라인은 완료 처리
 
-#### APK 커밋 및 푸시 (빌드 성공 시 필수)
-
-빌드 성공 후 APK를 소스 커밋과 **함께 또는 별도로** 반드시 커밋·푸시한다.
-
-```powershell
-cd "D:\GIT\claude"
-git add "diary-app/app/build/outputs/apk/debug/app-debug.apk"
-git commit -m "build: debug APK 업데이트 — {featureName}"
-git push origin main
-```
-
-- `git add -f` 불필요 — APK는 .gitignore 미포함 상태로 유지
-- 소스 커밋과 동일 커밋에 포함하거나 직후 별도 커밋 모두 허용
-- push 요청 시 APK가 커밋되지 않았다면 이 단계를 먼저 수행
-
 #### Session log 업데이트
 
 ```json
@@ -416,7 +401,7 @@ git push origin main
 
 **Progress:**
 ```
-[6/6] BUILD ✅  app-debug.apk ({size} MB) — committed & pushed
+[6/6] BUILD ✅  app-debug.apk ({size} MB)
       Path: app/build/outputs/apk/debug/app-debug.apk
 ```
 
