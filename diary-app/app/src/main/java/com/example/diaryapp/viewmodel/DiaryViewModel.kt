@@ -187,12 +187,13 @@ class DiaryViewModel @Inject constructor(
     }
 
     // Design Ref: §4.3 — 압축 후 다중 업로드 + weather 저장 (SC-03, SC-05)
+    // Design Ref: multi-emotion-weather-select §CHANGE-04 — emotions/weathers List 파라미터
     fun saveDiary(
         userId: String,
         content: String,
         date: String,
-        emotion: EmotionTag?,
-        weather: WeatherTag?,
+        emotions: List<EmotionTag> = emptyList(),
+        weathers: List<WeatherTag> = emptyList(),
         existingId: String = "",
         newImageUris: List<Uri> = emptyList(),
         existingImageUrls: List<String> = emptyList()
@@ -217,8 +218,8 @@ class DiaryViewModel @Inject constructor(
                     userId = userId,
                     content = content,
                     date = date,
-                    emotion = emotion,
-                    weather = weather,
+                    emotions = emotions,
+                    weathers = weathers,
                     imageUrls = finalUrls,
                     createdAt = if (existingId.isEmpty()) now else (_selectedEntry.value?.createdAt ?: now),
                     updatedAt = now

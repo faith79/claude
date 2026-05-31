@@ -95,16 +95,21 @@ class DiaryLocalCache @Inject constructor(
 
     // ── Serialization ─────────────────────────────────────────────────────────
 
+    // Design Ref: multi-emotion-weather-select §CHANGE-03 — JSONArray 직렬화, legacy fallback
     private fun entryToJson(entry: DiaryEntry): JSONObject {
         val urlArr = JSONArray()
         entry.imageUrls.forEach { urlArr.put(it) }
+        val emotionArr = JSONArray()
+        entry.emotions.forEach { emotionArr.put(it.name) }
+        val weatherArr = JSONArray()
+        entry.weathers.forEach { weatherArr.put(it.name) }
         return JSONObject()
             .put("id", entry.id)
             .put("userId", entry.userId)
             .put("content", entry.content)
             .put("date", entry.date)
-            .put("emotion", entry.emotion?.name ?: JSONObject.NULL)
-            .put("weather", entry.weather?.name ?: JSONObject.NULL)
+            .put("emotions", emotionArr)
+            .put("weathers", weatherArr)
             .put("imageUrls", urlArr)
             .put("createdAt", entry.createdAt)
             .put("updatedAt", entry.updatedAt)
@@ -115,15 +120,38 @@ class DiaryLocalCache @Inject constructor(
         val imageUrls = if (urlArr != null) {
             (0 until urlArr.length()).map { urlArr.getString(it) }
         } else emptyList()
+
+        val emotionArr = obj.optJSONArray("emotions")
+        val emotions = if (emotionArr != null) {
+            (0 until emotionArr.length()).mapNotNull {
+                runCatching { EmotionTag.valueOf(emotionArr.getString(it)) }.getOrNull()
+            }
+        } else {
+            // legacy 단일 "emotion" 필드 fallback
+            obj.optString("emotion", "").takeIf { it.isNotEmpty() }
+                ?.let { runCatching { EmotionTag.valueOf(it) }.getOrNull() }
+                ?.let { listOf(it) } ?: emptyList()
+        }
+
+        val weatherArr = obj.optJSONArray("weathers")
+        val weathers = if (weatherArr != null) {
+            (0 until weatherArr.length()).mapNotNull {
+                runCatching { WeatherTag.valueOf(weatherArr.getString(it)) }.getOrNull()
+            }
+        } else {
+            // legacy 단일 "weather" 필드 fallback
+            obj.optString("weather", "").takeIf { it.isNotEmpty() }
+                ?.let { runCatching { WeatherTag.valueOf(it) }.getOrNull() }
+                ?.let { listOf(it) } ?: emptyList()
+        }
+
         return DiaryEntry(
             id = obj.optString("id", ""),
             userId = obj.optString("userId", ""),
             content = obj.optString("content", ""),
             date = obj.optString("date", ""),
-            emotion = obj.optString("emotion", "").takeIf { it.isNotEmpty() }
-                ?.let { runCatching { EmotionTag.valueOf(it) }.getOrNull() },
-            weather = obj.optString("weather", "").takeIf { it.isNotEmpty() }
-                ?.let { runCatching { WeatherTag.valueOf(it) }.getOrNull() },
+            emotions = emotions,
+            weathers = weathers,
             imageUrls = imageUrls,
             createdAt = obj.optLong("createdAt", 0L),
             updatedAt = obj.optLong("updatedAt", 0L)

@@ -279,7 +279,8 @@ private fun DayCell(
     weekdayColor: Color,
     onClick: () -> Unit
 ) {
-    val emotion = entry?.emotion
+    // Design Ref: multi-emotion-weather-select §CHANGE-08 — 첫 번째 감정 이모지 표시
+    val emotion = entry?.emotions?.firstOrNull()
     val themeColors = LocalThemeColors.current
 
     // Plan SC: FR-08 — 토요일 파랑, 일요일 빨강; Plan SC: SC-05 — 평일 weekdayColor 적용

@@ -47,8 +47,9 @@ fun DiaryEditorScreen(
     val selectedEntry by diaryViewModel.selectedEntry.collectAsStateWithLifecycle()
 
     var content by remember { mutableStateOf("") }
-    var selectedEmotion by remember { mutableStateOf<EmotionTag?>(null) }
-    var selectedWeather by remember { mutableStateOf<WeatherTag?>(null) }
+    // Design Ref: multi-emotion-weather-select §CHANGE-05 — Set 기반 다중 선택
+    var selectedEmotions by remember { mutableStateOf<Set<EmotionTag>>(emptySet()) }
+    var selectedWeathers by remember { mutableStateOf<Set<WeatherTag>>(emptySet()) }
     var existingImageUrls by remember { mutableStateOf<List<String>>(emptyList()) }
     var newImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var initialized by remember { mutableStateOf(false) }
@@ -63,8 +64,8 @@ fun DiaryEditorScreen(
         if (!initialized && existingId.isNotEmpty() && selectedEntry != null) {
             val e = selectedEntry!!
             content = e.content
-            selectedEmotion = e.emotion
-            selectedWeather = e.weather
+            selectedEmotions = e.emotions.toSet()
+            selectedWeathers = e.weathers.toSet()
             existingImageUrls = e.imageUrls
             initialized = true
         }
@@ -105,8 +106,8 @@ fun DiaryEditorScreen(
                                     userId = userId,
                                     content = content,
                                     date = date,
-                                    emotion = selectedEmotion,
-                                    weather = selectedWeather,
+                                    emotions = selectedEmotions.toList(),
+                                    weathers = selectedWeathers.toList(),
                                     existingId = existingId,
                                     newImageUris = newImageUris,
                                     existingImageUrls = existingImageUrls
@@ -137,16 +138,20 @@ fun DiaryEditorScreen(
                 Spacer(Modifier.height(12.dp))
 
                 EmotionSelector(
-                    selected = selectedEmotion,
-                    onSelect = { selectedEmotion = if (selectedEmotion == it) null else it }
+                    selected = selectedEmotions,
+                    onSelect = { em ->
+                        selectedEmotions = if (em in selectedEmotions) selectedEmotions - em else selectedEmotions + em
+                    }
                 )
 
                 Spacer(Modifier.height(16.dp))
 
                 // Plan SC: SC-03 — 감정 태그 아래 날씨 탭 배치
                 WeatherSelector(
-                    selected = selectedWeather,
-                    onSelect = { selectedWeather = if (selectedWeather == it) null else it }
+                    selected = selectedWeathers,
+                    onSelect = { w ->
+                        selectedWeathers = if (w in selectedWeathers) selectedWeathers - w else selectedWeathers + w
+                    }
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -212,9 +217,10 @@ fun DiaryEditorScreen(
     }
 }
 
+// Design Ref: multi-emotion-weather-select §CHANGE-05 — Set 기반 다중 선택
 @Composable
 private fun EmotionSelector(
-    selected: EmotionTag?,
+    selected: Set<EmotionTag>,
     onSelect: (EmotionTag) -> Unit
 ) {
     Column {
@@ -229,7 +235,7 @@ private fun EmotionSelector(
             modifier = Modifier.fillMaxWidth()
         ) {
             EmotionTag.entries.forEach { emotion ->
-                val isSelected = selected == emotion
+                val isSelected = emotion in selected
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier

@@ -10,9 +10,10 @@ import androidx.compose.ui.unit.dp
 import com.example.diaryapp.data.model.WeatherTag
 
 // Design Ref: §4.4 — 감정 태그 아래 배치, 파스텔 선택 칩 (SC-03, FR-04, FR-05)
+// Design Ref: multi-emotion-weather-select §CHANGE-06 — Set 기반 다중 선택
 @Composable
 fun WeatherSelector(
-    selected: WeatherTag?,
+    selected: Set<WeatherTag>,
     onSelect: (WeatherTag) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -25,7 +26,7 @@ fun WeatherSelector(
         Spacer(Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(WeatherTag.entries) { weather ->
-                val isSelected = selected == weather
+                val isSelected = weather in selected
                 FilterChip(
                     selected = isSelected,
                     onClick = {

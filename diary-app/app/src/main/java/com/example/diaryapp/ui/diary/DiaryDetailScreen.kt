@@ -375,19 +375,19 @@ private fun DiaryEntryContent(
             }
         }
 
-        if (entry.emotion != null || entry.weather != null) {
-            Row(
+        // Design Ref: multi-emotion-weather-select §CHANGE-07 — 복수 감정/날씨 칩 LazyRow
+        if (entry.emotions.isNotEmpty() || entry.weathers.isNotEmpty()) {
+            LazyRow(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                entry.emotion?.let { emotion ->
+                items(entry.emotions) { emotion ->
                     AssistChip(
                         onClick = {},
                         label = { Text("${emotion.emoji} ${emotion.label}") }
                     )
                 }
-                entry.weather?.let { weather ->
+                items(entry.weathers) { weather ->
                     AssistChip(
                         onClick = {},
                         label = { Text("${weather.emoji} ${weather.label}") }

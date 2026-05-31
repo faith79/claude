@@ -64,14 +64,17 @@ class FirestoreDataSource @Inject constructor(
             .filter { it.content.contains(query, ignoreCase = true) }
 
     // Design Ref: §3.4 — v0.1.0 하위 호환: imageUrl fallback, title 무시, weather nullable
+    // Design Ref: multi-emotion-weather-select §CHANGE-02 — emotions/weathers List, legacy fallback
     data class DiaryEntryDto(
         val userId: String = "",
         val content: String = "",
         val date: String = "",
-        val emotion: String? = null,
-        val weather: String? = null,
+        val emotions: List<String> = emptyList(),  // 신규 다중 필드
+        val emotion: String? = null,               // 레거시 단일 필드 — 읽기 전용
+        val weathers: List<String> = emptyList(),  // 신규 다중 필드
+        val weather: String? = null,               // 레거시 단일 필드 — 읽기 전용
         val imageUrls: List<String> = emptyList(),
-        val imageUrl: String? = null,   // 레거시 필드 — 읽기 전용
+        val imageUrl: String? = null,              // 레거시 필드 — 읽기 전용
         val createdAt: Long = 0L,
         val updatedAt: Long = 0L
     ) {
@@ -80,8 +83,12 @@ class FirestoreDataSource @Inject constructor(
             userId = userId,
             content = content,
             date = date,
-            emotion = emotion?.let { runCatching { EmotionTag.valueOf(it) }.getOrNull() },
-            weather = weather?.let { runCatching { WeatherTag.valueOf(it) }.getOrNull() },
+            // emotions 우선, 비어있으면 legacy emotion 단일 필드 fallback
+            emotions = emotions.mapNotNull { runCatching { EmotionTag.valueOf(it) }.getOrNull() }
+                .ifEmpty { emotion?.let { runCatching { EmotionTag.valueOf(it) }.getOrNull() }?.let { listOf(it) } ?: emptyList() },
+            // weathers 우선, 비어있으면 legacy weather 단일 필드 fallback
+            weathers = weathers.mapNotNull { runCatching { WeatherTag.valueOf(it) }.getOrNull() }
+                .ifEmpty { weather?.let { runCatching { WeatherTag.valueOf(it) }.getOrNull() }?.let { listOf(it) } ?: emptyList() },
             // Plan SC: imageUrl(구버전) → imageUrls[0] fallback
             imageUrls = imageUrls.ifEmpty { imageUrl?.let { listOf(it) } ?: emptyList() },
             createdAt = createdAt,
@@ -93,8 +100,8 @@ class FirestoreDataSource @Inject constructor(
                 userId = e.userId,
                 content = e.content,
                 date = e.date,
-                emotion = e.emotion?.name,
-                weather = e.weather?.name,
+                emotions = e.emotions.map { it.name },
+                weathers = e.weathers.map { it.name },
                 imageUrls = e.imageUrls,
                 createdAt = e.createdAt,
                 updatedAt = e.updatedAt
