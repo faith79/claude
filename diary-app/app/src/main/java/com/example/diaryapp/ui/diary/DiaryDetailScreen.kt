@@ -86,12 +86,22 @@ fun DiaryDetailScreen(
 
     fun pageToDate(page: Int): LocalDate = baseDate.plusDays((page - INITIAL_PAGE).toLong())
 
-    LaunchedEffect(pagerState.settledPage, userId) {
-        val targetDate = pageToDate(pagerState.settledPage).format(DateTimeFormatter.ISO_LOCAL_DATE)
+    // Design Ref: diary-detail-swipe-performance §design — currentPage: 스와이프 50% 시점 선로딩 (R-01)
+    LaunchedEffect(pagerState.currentPage, userId) {
+        val targetDate = pageToDate(pagerState.currentPage).format(DateTimeFormatter.ISO_LOCAL_DATE)
         diaryViewModel.loadDiaryByDate(userId, targetDate)
     }
 
-    val entry by diaryViewModel.selectedEntry.collectAsStateWithLifecycle()
+    // Design Ref: diary-detail-swipe-performance §design — 정착 시 ±1 사일런트 프리패치 (R-02)
+    LaunchedEffect(pagerState.settledPage, userId) {
+        for (offset in listOf(-1, 1)) {
+            val neighborDate = pageToDate(pagerState.settledPage + offset)
+                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+            diaryViewModel.prefetchEntry(userId, neighborDate)
+        }
+    }
+
+    val entryMap by diaryViewModel.entryMap.collectAsStateWithLifecycle()
 
     // Design Ref: joyary-upgrade-v5 §5.1 — containerColor = diaryBg (FR-03)
     val diaryBg = LocalThemeColors.current.diaryBg
@@ -108,14 +118,17 @@ fun DiaryDetailScreen(
             val targetDate = pageToDate(page)
             val targetDateStr = targetDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
-            val isCurrentPage = page == pagerState.settledPage
-            val pageEntry = if (isCurrentPage) entry else null
+            // Design Ref: diary-detail-swipe-performance §design — entryMap으로 페이지별 독립 조회 (R-03, R-05)
+            val isCurrentPage = page == pagerState.currentPage
+            val pageEntry = entryMap[targetDateStr]
+            val pageHasData = entryMap.containsKey(targetDateStr)
 
             DiaryPageContent(
                 date = targetDateStr,
                 entry = pageEntry,
                 isCurrentPage = isCurrentPage,
-                isDetailLoading = isCurrentPage && isDetailLoading,
+                isDetailLoading = isCurrentPage && isDetailLoading && !pageHasData,
+                hasData = pageHasData,
                 onEdit = onEdit,
                 onBack = onBack,
                 onDelete = { e -> diaryViewModel.deleteDiary(e) },
@@ -147,6 +160,7 @@ private fun DiaryPageContent(
     entry: DiaryEntry?,
     isCurrentPage: Boolean,
     isDetailLoading: Boolean = false,
+    hasData: Boolean = false,
     onEdit: (String, String) -> Unit,
     onBack: () -> Unit,
     onDelete: (DiaryEntry) -> Unit,
@@ -193,8 +207,9 @@ private fun DiaryPageContent(
             }
         ) { padding ->
             // Design Ref: joyary-upgrade-v9 §3.2 — 스켈레톤 분기 (SC-06)
+            // Design Ref: diary-detail-swipe-performance §design — 프리패치 데이터 있으면 비현재 페이지도 표시 (R-03)
             when {
-                !isCurrentPage -> {
+                !isCurrentPage && !hasData -> {
                     Box(Modifier.fillMaxSize().padding(padding))
                     return@Scaffold
                 }

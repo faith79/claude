@@ -50,6 +50,10 @@ class DiaryViewModel @Inject constructor(
     private val _selectedEntry = MutableStateFlow<DiaryEntry?>(null)
     val selectedEntry: StateFlow<DiaryEntry?> = _selectedEntry.asStateFlow()
 
+    // Design Ref: diary-detail-swipe-performance §design — 페이지별 독립 entry, 프리패치 데이터 보유
+    private val _entryMap = MutableStateFlow<Map<String, DiaryEntry?>>(emptyMap())
+    val entryMap: StateFlow<Map<String, DiaryEntry?>> = _entryMap.asStateFlow()
+
     private val _searchResults = MutableStateFlow<List<DiaryEntry>>(emptyList())
     val searchResults: StateFlow<List<DiaryEntry>> = _searchResults.asStateFlow()
 
@@ -98,19 +102,33 @@ class DiaryViewModel @Inject constructor(
     }
 
     // Design Ref: joyary-upgrade-v9 §2.3 — 월 내 모든 entry를 memEntryCache에 선채움 (SC-04)
+    // Design Ref: diary-detail-swipe-performance §design — entryMap도 동시 채우기 (R-04)
     private fun warmEntryCache(userId: String, entries: List<DiaryEntry>) {
+        val newMapEntries = mutableMapOf<String, DiaryEntry?>()
         entries.forEach { entry ->
             val entryKey = "${userId}_${entry.date}"
             if (!memEntryCache.containsKey(entryKey)) {
                 memEntryCache[entryKey] = entry
             }
+            if (!_entryMap.value.containsKey(entry.date)) {
+                newMapEntries[entry.date] = entry
+            }
+        }
+        if (newMapEntries.isNotEmpty()) {
+            _entryMap.value = _entryMap.value + newMapEntries
         }
     }
 
     fun loadDiaryByDate(userId: String, date: String) {
         val key = "${userId}_${date}"
         // Design Ref: joyary-upgrade-v8 §4.4 — L1(메모리) → L2(디스크) → Firestore (SC-03)
-        if (memEntryCache.containsKey(key)) { _selectedEntry.value = memEntryCache[key]; return }
+        // Design Ref: diary-detail-swipe-performance §design — L1 히트 시 entryMap도 업데이트, 스켈레톤 없음
+        if (memEntryCache.containsKey(key)) {
+            val cached = memEntryCache[key]
+            _selectedEntry.value = cached
+            _entryMap.value = _entryMap.value + (date to cached)
+            return
+        }
         // Design Ref: joyary-upgrade-v9 §2.4 — L2 읽기/쓰기 IO dispatcher (SC-03)
         viewModelScope.launch {
             _isDetailLoading.value = true
@@ -119,6 +137,7 @@ class DiaryViewModel @Inject constructor(
                 val (_, entry) = cached
                 memEntryCache[key] = entry
                 _selectedEntry.value = entry
+                _entryMap.value = _entryMap.value + (date to entry)
                 _isDetailLoading.value = false
                 return@launch
             }
@@ -126,7 +145,32 @@ class DiaryViewModel @Inject constructor(
             memEntryCache[key] = result
             withContext(Dispatchers.IO) { localCache.putEntry(key, result) }
             _selectedEntry.value = result
+            _entryMap.value = _entryMap.value + (date to result)
             _isDetailLoading.value = false
+        }
+    }
+
+    // Design Ref: diary-detail-swipe-performance §design — 인접 날짜 사일런트 선로딩 (R-02, R-03)
+    fun prefetchEntry(userId: String, date: String) {
+        val key = "${userId}_${date}"
+        if (memEntryCache.containsKey(key)) {
+            if (!_entryMap.value.containsKey(date)) {
+                _entryMap.value = _entryMap.value + (date to memEntryCache[key])
+            }
+            return
+        }
+        if (_entryMap.value.containsKey(date)) return
+        viewModelScope.launch {
+            val diskCached = withContext(Dispatchers.IO) { localCache.getEntry(key) }
+            val result = if (diskCached != null) {
+                diskCached.second
+            } else {
+                val r = diaryRepository.getDiaryByDate(userId, date)
+                withContext(Dispatchers.IO) { localCache.putEntry(key, r) }
+                r
+            }
+            memEntryCache[key] = result
+            _entryMap.value = _entryMap.value + (date to result)
         }
     }
 
@@ -232,6 +276,7 @@ class DiaryViewModel @Inject constructor(
     }
 
     // Design Ref: joyary-upgrade-v8 §4.5 — L1 + L2 동시 무효화 (SC-04)
+    // Design Ref: diary-detail-swipe-performance §design — entryMap에서도 제거 (R-06)
     private fun invalidateCache(userId: String, date: String) {
         val yearMonth = date.substring(0, 7)
         val monthKey = "${userId}_${yearMonth}"
@@ -240,6 +285,7 @@ class DiaryViewModel @Inject constructor(
         memEntryCache.remove(entryKey)
         localCache.removeMonth(monthKey)
         localCache.removeEntry(entryKey)
+        _entryMap.value = _entryMap.value - date
     }
 
     // Design Ref: joyary-ux-improvements §FR-03 — 인접 달 백그라운드 선로딩 (_diaries 미변경)
