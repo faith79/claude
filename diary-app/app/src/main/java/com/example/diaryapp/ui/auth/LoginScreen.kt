@@ -1,18 +1,25 @@
 package com.example.diaryapp.ui.auth
 
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.viewmodel.AuthViewModel
@@ -25,9 +32,48 @@ fun LoginScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // Design Ref: joyary-login-biometric §2.5 — 생체 하드웨어 지원 여부 확인
+    val canUseBiometric = remember {
+        val bm = BiometricManager.from(context)
+        bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) ==
+            BiometricManager.BIOMETRIC_SUCCESS
+    }
+    val showBiometric = canUseBiometric && viewModel.hasBiometricCredentials
+
+    // Design Ref: joyary-login-biometric §2.5 — BiometricPrompt: 성공 시 저장된 자격증명으로 signIn
+    val biometricPrompt = remember {
+        val activity = context as FragmentActivity
+        BiometricPrompt(
+            activity,
+            ContextCompat.getMainExecutor(activity),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    viewModel.signInWithBiometric()
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    if (errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON &&
+                        errorCode != BiometricPrompt.ERROR_USER_CANCELED
+                    ) {
+                        viewModel.resetState()
+                    }
+                }
+            }
+        )
+    }
+
+    val promptInfo = remember {
+        BiometricPrompt.PromptInfo.Builder()
+            .setTitle("지문 로그인")
+            .setSubtitle("등록된 지문으로 로그인합니다")
+            .setNegativeButtonText("취소")
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .build()
+    }
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -100,6 +146,21 @@ fun LoginScreen(
                 Text("로그인")
             }
         }
+
+        // Design Ref: joyary-login-biometric §2.5 — 생체 지원 + 저장된 자격증명 있을 때만 표시
+        if (showBiometric) {
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { biometricPrompt.authenticate(promptInfo) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = uiState !is AuthUiState.Loading
+            ) {
+                Icon(Icons.Default.Fingerprint, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("지문으로 로그인")
+            }
+        }
+
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onNavigateToSignUp) {
             Text("계정이 없으신가요? 회원가입")

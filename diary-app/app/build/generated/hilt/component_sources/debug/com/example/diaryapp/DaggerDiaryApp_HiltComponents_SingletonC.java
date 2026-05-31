@@ -32,6 +32,7 @@ import com.example.diaryapp.notification.DailyReminderWorker;
 import com.example.diaryapp.notification.DailyReminderWorker_AssistedFactory;
 import com.example.diaryapp.notification.NotificationPreferences;
 import com.example.diaryapp.notification.ThemePreferences;
+import com.example.diaryapp.security.CredentialStorage;
 import com.example.diaryapp.viewmodel.AuthViewModel;
 import com.example.diaryapp.viewmodel.AuthViewModel_HiltModules;
 import com.example.diaryapp.viewmodel.AuthViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
@@ -399,6 +400,7 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
 
     @Override
     public void injectMainActivity(MainActivity arg0) {
+      injectMainActivity2(arg0);
     }
 
     @Override
@@ -424,6 +426,12 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
     @Override
     public ViewComponentBuilder viewComponentBuilder() {
       return new ViewCBuilder(singletonCImpl, activityRetainedCImpl, activityCImpl);
+    }
+
+    @CanIgnoreReturnValue
+    private MainActivity injectMainActivity2(MainActivity instance) {
+      MainActivity_MembersInjector.injectAuthRepository(instance, singletonCImpl.bindAuthRepositoryProvider.get());
+      return instance;
     }
   }
 
@@ -581,6 +589,8 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
 
     Provider<FirebaseAuth> provideFirebaseAuthProvider;
 
+    Provider<CredentialStorage> credentialStorageProvider;
+
     Provider<AuthRepositoryImpl> authRepositoryImplProvider;
 
     Provider<AuthRepository> bindAuthRepositoryProvider;
@@ -634,22 +644,23 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
       this.dailyReminderWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<DailyReminderWorker_AssistedFactory>(singletonCImpl, 0));
       this.provideFirebaseAuthProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseAuth>(singletonCImpl, 2));
+      this.credentialStorageProvider = DoubleCheck.provider(new SwitchingProvider<CredentialStorage>(singletonCImpl, 3));
       this.authRepositoryImplProvider = new SwitchingProvider<>(singletonCImpl, 1);
       this.bindAuthRepositoryProvider = DoubleCheck.provider((Provider) (authRepositoryImplProvider));
-      this.provideFirestoreProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseFirestore>(singletonCImpl, 4));
-      this.provideFirebaseStorageProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseStorage>(singletonCImpl, 5));
-      this.diaryRepositoryImplProvider = new SwitchingProvider<>(singletonCImpl, 3);
+      this.provideFirestoreProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseFirestore>(singletonCImpl, 5));
+      this.provideFirebaseStorageProvider = DoubleCheck.provider(new SwitchingProvider<FirebaseStorage>(singletonCImpl, 6));
+      this.diaryRepositoryImplProvider = new SwitchingProvider<>(singletonCImpl, 4);
       this.bindDiaryRepositoryProvider = DoubleCheck.provider((Provider) (diaryRepositoryImplProvider));
-      this.imageCompressorProvider = DoubleCheck.provider(new SwitchingProvider<ImageCompressor>(singletonCImpl, 6));
-      this.diaryLocalCacheProvider = DoubleCheck.provider(new SwitchingProvider<DiaryLocalCache>(singletonCImpl, 7));
-      this.provideNotificationPreferencesProvider = DoubleCheck.provider(new SwitchingProvider<NotificationPreferences>(singletonCImpl, 8));
-      this.provideThemePreferencesProvider = DoubleCheck.provider(new SwitchingProvider<ThemePreferences>(singletonCImpl, 9));
-      this.provideWorkManagerProvider = DoubleCheck.provider(new SwitchingProvider<WorkManager>(singletonCImpl, 10));
+      this.imageCompressorProvider = DoubleCheck.provider(new SwitchingProvider<ImageCompressor>(singletonCImpl, 7));
+      this.diaryLocalCacheProvider = DoubleCheck.provider(new SwitchingProvider<DiaryLocalCache>(singletonCImpl, 8));
+      this.provideNotificationPreferencesProvider = DoubleCheck.provider(new SwitchingProvider<NotificationPreferences>(singletonCImpl, 9));
+      this.provideThemePreferencesProvider = DoubleCheck.provider(new SwitchingProvider<ThemePreferences>(singletonCImpl, 10));
+      this.provideWorkManagerProvider = DoubleCheck.provider(new SwitchingProvider<WorkManager>(singletonCImpl, 11));
     }
 
     @Override
-    public void injectDiaryApp(DiaryApp diaryApp) {
-      injectDiaryApp2(diaryApp);
+    public void injectDiaryApp(DiaryApp arg0) {
+      injectDiaryApp2(arg0);
     }
 
     @Override
@@ -696,33 +707,36 @@ public final class DaggerDiaryApp_HiltComponents_SingletonC {
           };
 
           case 1: // com.example.diaryapp.data.repository.AuthRepositoryImpl
-          return (T) new AuthRepositoryImpl(singletonCImpl.authDataSource());
+          return (T) new AuthRepositoryImpl(singletonCImpl.authDataSource(), singletonCImpl.credentialStorageProvider.get());
 
           case 2: // com.google.firebase.auth.FirebaseAuth
           return (T) DataSourceModule_ProvideFirebaseAuthFactory.provideFirebaseAuth();
 
-          case 3: // com.example.diaryapp.data.repository.DiaryRepositoryImpl
+          case 3: // com.example.diaryapp.security.CredentialStorage
+          return (T) new CredentialStorage(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 4: // com.example.diaryapp.data.repository.DiaryRepositoryImpl
           return (T) new DiaryRepositoryImpl(singletonCImpl.firestoreDataSource(), singletonCImpl.storageDataSource());
 
-          case 4: // com.google.firebase.firestore.FirebaseFirestore
+          case 5: // com.google.firebase.firestore.FirebaseFirestore
           return (T) DataSourceModule_ProvideFirestoreFactory.provideFirestore();
 
-          case 5: // com.google.firebase.storage.FirebaseStorage
+          case 6: // com.google.firebase.storage.FirebaseStorage
           return (T) DataSourceModule_ProvideFirebaseStorageFactory.provideFirebaseStorage();
 
-          case 6: // com.example.diaryapp.data.util.ImageCompressor
+          case 7: // com.example.diaryapp.data.util.ImageCompressor
           return (T) new ImageCompressor(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 7: // com.example.diaryapp.data.util.DiaryLocalCache
+          case 8: // com.example.diaryapp.data.util.DiaryLocalCache
           return (T) new DiaryLocalCache(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 8: // com.example.diaryapp.notification.NotificationPreferences
+          case 9: // com.example.diaryapp.notification.NotificationPreferences
           return (T) NotificationModule_ProvideNotificationPreferencesFactory.provideNotificationPreferences(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 9: // com.example.diaryapp.notification.ThemePreferences
+          case 10: // com.example.diaryapp.notification.ThemePreferences
           return (T) NotificationModule_ProvideThemePreferencesFactory.provideThemePreferences(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 10: // androidx.work.WorkManager
+          case 11: // androidx.work.WorkManager
           return (T) NotificationModule_ProvideWorkManagerFactory.provideWorkManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           default: throw new AssertionError(id);

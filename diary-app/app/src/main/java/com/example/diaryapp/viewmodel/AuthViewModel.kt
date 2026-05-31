@@ -21,13 +21,33 @@ class AuthViewModel @Inject constructor(
 
     val isLoggedIn: Boolean get() = authRepository.isLoggedIn()
     val currentUserId: String get() = authRepository.getCurrentUser()?.uid ?: ""
+    // Design Ref: joyary-login-biometric §2.4 — 저장된 생체 자격증명 여부
+    val hasBiometricCredentials: Boolean get() = authRepository.hasBiometricCredentials()
 
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
             authRepository.signIn(email, password)
-                .onSuccess { _uiState.value = AuthUiState.Success }
+                .onSuccess {
+                    // Design Ref: joyary-login-biometric §2.4 — 로그인 성공 시 자격증명 저장
+                    authRepository.saveCredentials(email, password)
+                    _uiState.value = AuthUiState.Success
+                }
                 .onFailure { _uiState.value = AuthUiState.Error(it.message ?: "로그인 실패") }
+        }
+    }
+
+    // Design Ref: joyary-login-biometric §2.4 — 생체인증 성공 후 저장된 자격증명으로 로그인
+    fun signInWithBiometric() {
+        val (email, password) = authRepository.getBiometricCredentials() ?: run {
+            _uiState.value = AuthUiState.Error("저장된 인증 정보가 없습니다")
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = AuthUiState.Loading
+            authRepository.signIn(email, password)
+                .onSuccess { _uiState.value = AuthUiState.Success }
+                .onFailure { _uiState.value = AuthUiState.Error(it.message ?: "생체 인증 로그인 실패") }
         }
     }
 
@@ -49,6 +69,12 @@ class AuthViewModel @Inject constructor(
             authRepository.signOut()
             _uiState.value = AuthUiState.Idle
         }
+    }
+
+    // Design Ref: joyary-login-biometric §1.2 — 앱 시작 시 동기 즉시 signOut
+    fun signOutImmediate() {
+        authRepository.signOutImmediate()
+        _uiState.value = AuthUiState.Idle
     }
 
     fun resetState() { _uiState.value = AuthUiState.Idle }

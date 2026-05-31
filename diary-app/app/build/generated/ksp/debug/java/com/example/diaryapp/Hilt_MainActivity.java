@@ -2,9 +2,10 @@ package com.example.diaryapp;
 
 import android.content.Context;
 import android.os.Bundle;
-import androidx.activity.ComponentActivity;
 import androidx.activity.contextaware.OnContextAvailableListener;
 import androidx.annotation.CallSuper;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import dagger.hilt.android.internal.lifecycle.DefaultViewModelFactories;
 import dagger.hilt.android.internal.managers.ActivityComponentManager;
@@ -18,7 +19,7 @@ import javax.annotation.processing.Generated;
  * A generated base class to be extended by the @dagger.hilt.android.AndroidEntryPoint annotated class. If using the Gradle plugin, this is swapped as the base class via bytecode transformation.
  */
 @Generated("dagger.hilt.android.processor.internal.androidentrypoint.ActivityGenerator")
-public abstract class Hilt_MainActivity extends ComponentActivity implements GeneratedComponentManagerHolder {
+public abstract class Hilt_MainActivity extends FragmentActivity implements GeneratedComponentManagerHolder {
   private volatile ActivityComponentManager componentManager;
 
   private final Object componentManagerLock = new Object();
@@ -30,8 +31,8 @@ public abstract class Hilt_MainActivity extends ComponentActivity implements Gen
     _initHiltInternal();
   }
 
-  Hilt_MainActivity(int contentLayoutId) {
-    super(contentLayoutId);
+  Hilt_MainActivity(int p0) {
+    super(p0);
     _initHiltInternal();
   }
 
@@ -50,7 +51,7 @@ public abstract class Hilt_MainActivity extends ComponentActivity implements Gen
 
   @CallSuper
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
+  protected void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     initSavedStateHandleHolders();
   }
