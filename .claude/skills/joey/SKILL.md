@@ -414,6 +414,8 @@ APK 빌드 완료 후 수정된 소스 파일과 PDCA 문서를 자동 커밋·�
 #### 스테이징 대상
 
 - 수정된 소스 파일 (DO 단계에서 변경한 `.kt`, `.xml` 등)
+- **APK 파일 (항상 포함 필수)**:
+  - `diary-app/app/build/outputs/apk/debug/app-debug.apk`
 - PDCA 문서:
   - `docs/01-plan/features/{featureName}.plan.md`
   - `docs/02-design/features/{featureName}.design.md`
@@ -432,6 +434,7 @@ APK 빌드 완료 후 수정된 소스 파일과 PDCA 문서를 자동 커밋·�
 ```powershell
 cd "D:\GIT\claude"
 git add <변경된 소스 파일들>
+git add "diary-app/app/build/outputs/apk/debug/app-debug.apk"
 git add "docs/01-plan/features/{featureName}.plan.md"
 git add "docs/02-design/features/{featureName}.design.md"
 git add "docs/03-analysis/{featureName}.analysis.md"
@@ -443,7 +446,9 @@ git push origin main
 
 #### 주의 사항
 
-- 빌드 아티팩트(`.gradle/`, `app/build/` 디렉터리)는 스테이징하지 않음
+- APK 파일은 **반드시** 소스 커밋과 함께 스테이징 (빌드 성공 후 항상 포함)
+- APK 미빌드 상태라면 Step 6 빌드 후 포함
+- 나머지 빌드 아티팩트(`.gradle/`, `app/build/` APK 제외)는 스테이징하지 않음
 - `git add -A` 또는 `git add .` 사용 금지 — 변경 파일 목록을 명시적으로 지정
 - push 실패 시 리포트에 ⚠️ PUSH FAILED 기록, 파이프라인은 완료 처리
 
