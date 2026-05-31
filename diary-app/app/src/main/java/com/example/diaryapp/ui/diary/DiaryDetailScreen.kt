@@ -86,15 +86,20 @@ fun DiaryDetailScreen(
 
     fun pageToDate(page: Int): LocalDate = baseDate.plusDays((page - INITIAL_PAGE).toLong())
 
-    // Design Ref: diary-detail-swipe-performance §design — currentPage: 스와이프 50% 시점 선로딩 (R-01)
+    // Design Ref: diary-detail-swipe-performance §CHANGE-01 — currentPage: 50% 시점 로드 + ±1 즉시 프리패치 (R-01, R-03)
     LaunchedEffect(pagerState.currentPage, userId) {
-        val targetDate = pageToDate(pagerState.currentPage).format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val currentPage = pagerState.currentPage
+        val targetDate = pageToDate(currentPage).format(DateTimeFormatter.ISO_LOCAL_DATE)
         diaryViewModel.loadDiaryByDate(userId, targetDate)
+        for (offset in listOf(-1, 1)) {
+            val neighborDate = pageToDate(currentPage + offset).format(DateTimeFormatter.ISO_LOCAL_DATE)
+            diaryViewModel.prefetchEntry(userId, neighborDate)
+        }
     }
 
-    // Design Ref: diary-detail-swipe-performance §design — 정착 시 ±1 사일런트 프리패치 (R-02)
+    // Design Ref: diary-detail-swipe-performance §CHANGE-02 — 정착 시 ±2 사일런트 프리패치 (R-02)
     LaunchedEffect(pagerState.settledPage, userId) {
-        for (offset in listOf(-1, 1)) {
+        for (offset in listOf(-2, -1, 1, 2)) {
             val neighborDate = pageToDate(pagerState.settledPage + offset)
                 .format(DateTimeFormatter.ISO_LOCAL_DATE)
             diaryViewModel.prefetchEntry(userId, neighborDate)
