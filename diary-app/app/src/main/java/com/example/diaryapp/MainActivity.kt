@@ -27,8 +27,11 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Design Ref: joyary-login-biometric §1.1 — 앱 실행 시 Firebase 세션 항상 종료 (FR-01)
-        authRepository.signOutImmediate()
+        // Design Ref: joyary-login-biometric §1.1 — 신규 실행(savedInstanceState==null)일 때만 signOut (FR-01)
+        // Activity 재생성(회전, 백그라운드 복귀 등) 시 signOut 하면 auth 토큰이 사라져 PERMISSION_DENIED 발생
+        if (savedInstanceState == null) {
+            authRepository.signOutImmediate()
+        }
         enableEdgeToEdge()
         setContent {
             // Design Ref: joyary-upgrade-v4 §3.2 — templateIndex로 colorScheme + themeColors 동적 주입 (FR-03,FR-04)
