@@ -1,0 +1,9 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "app/src/main/assets/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
