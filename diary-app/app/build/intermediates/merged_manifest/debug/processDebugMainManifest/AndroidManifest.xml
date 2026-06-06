@@ -41,6 +41,7 @@
         <activity
             android:name="com.example.diaryapp.MainActivity"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.DiaryApp" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
