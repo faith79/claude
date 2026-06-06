@@ -49,6 +49,9 @@ fun NavGraph(
         }
 
         composable(Screen.Home.route) {
+            // Design Ref: diary-ux-fixes §SC-02 — Activity 스코프 VM 공유 (invalidateCache가 HomeScreen에 즉시 반영)
+            val activity = LocalContext.current as ComponentActivity
+            val diaryViewModel: DiaryViewModel = hiltViewModel(activity)
             HomeScreen(
                 onDateSelected = { date ->
                     navController.navigate(Screen.DiaryDetail.createRoute(date))
@@ -64,7 +67,8 @@ fun NavGraph(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
-                }
+                },
+                diaryViewModel = diaryViewModel
             )
         }
 
@@ -107,7 +111,8 @@ fun NavGraph(
             DiaryEditorScreen(
                 date = date,
                 existingId = id,
-                onSaved = { navController.popBackStack() },
+                // Design Ref: diary-ux-fixes §SC-02 — 저장 후 항상 Home(달력)으로 복귀
+                onSaved = { navController.popBackStack(Screen.Home.route, inclusive = false) },
                 onBack = { navController.popBackStack() },
                 diaryViewModel = diaryViewModel
             )

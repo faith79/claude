@@ -291,9 +291,11 @@ class DiaryViewModel @Inject constructor(
     // Design Ref: joyary-upgrade-v8 §4.5 — L1 + L2 동시 무효화 (SC-04)
     // Design Ref: diary-detail-swipe-performance §design — entryMap에서도 제거 (R-06)
     // Design Ref: calendar-swipe-performance §CHANGE-04 — monthlyDiaryMap에서도 달 제거 (R-06)
+    // Design Ref: diary-ux-fixes §SC-03 — 무효화 후 즉시 Firestore 재조회 (신규 일기 즉시 반영)
     private fun invalidateCache(userId: String, date: String) {
-        val yearMonth = date.substring(0, 7)
-        val monthKey = "${userId}_${yearMonth}"
+        val yearMonthStr = date.substring(0, 7)
+        val yearMonth = YearMonth.of(date.substring(0, 4).toInt(), date.substring(5, 7).toInt())
+        val monthKey = "${userId}_${yearMonthStr}"
         val entryKey = "${userId}_${date}"
         memMonthCache.remove(monthKey)
         memEntryCache.remove(entryKey)
@@ -301,6 +303,7 @@ class DiaryViewModel @Inject constructor(
         localCache.removeEntry(entryKey)
         _entryMap.value = _entryMap.value - date
         _monthlyDiaryMap.value = _monthlyDiaryMap.value - monthKey
+        loadMonth(userId, yearMonth)
     }
 
     // Design Ref: joyary-ux-improvements §FR-03 — 인접 달 백그라운드 선로딩 (_diaries 미변경)
