@@ -1,13 +1,15 @@
 # 한국 주식 조건 스캐너 → 카카오톡 발송
 
 ## Purpose
-코스피/코스닥 전 종목 대상으로 **D-1 상한가 → D-0 도지 캔들 + 거래량 급증** 2가지 조건을 모두 만족하는 종목을 스캐닝하여, 결과를 카카오톡 "나에게 보내기"로 발송합니다.
+코스피/코스닥 전 종목 대상으로 **D-1 상한가 → D-0 장다리 도지 캔들 + 거래량 급증** 조건을 만족하는 종목을 스캐닝하여, 결과를 카카오톡 "나에게 보내기"로 발송합니다.
 
-주말·공휴일에 실행해도 **실제 데이터가 있는 최근 2 거래일**을 자동으로 탐색합니다.
-(예: 일요일 실행 → 목(D-1)·금(D-0) 데이터 활용 / 목요일이 휴장이면 수(D-1)·금(D-0) 활용)
+숫자 인자로 과거 거래일 기준 조회 가능:
+- `/stock-kakao-alert` → 최근 2거래일 (목→금)
+- `/stock-kakao-alert 1` → 1거래일 이전 (화→목)
+- `/stock-kakao-alert 2` → 2거래일 이전 (월→화), 선거일 등 휴장일 자동 제외
 
 ## Trigger
-`/stock-kakao-alert`
+`/stock-kakao-alert [offset]`  (offset 생략 시 0)
 
 ## Prerequisites
 - Python 3.8+ (pykrx, finance-datareader 자동 설치 포함)
@@ -18,12 +20,20 @@
 
 ### Step 1: Run Python via PowerShell
 
-Execute via PowerShell: `$env:PYTHONIOENCODING="utf-8"; & "C:\Users\JOEY\AppData\Local\Programs\Python\Python312\python.exe" "D:\GIT\claude\_stock_scan.py" 2>$null`
+Parse `[offset]` from the skill invocation argument (default 0 if omitted).
+
+Execute via PowerShell:
+```
+$env:PYTHONIOENCODING="utf-8"; & "C:\Users\JOEY\AppData\Local\Programs\Python\Python312\python.exe" "D:\GIT\claude\_stock_scan.py" {offset} 2>$null
+```
 
 The script at `D:\GIT\claude\_stock_scan.py` must contain the code below. Write it before running if it doesn't exist.
 
 ```python
 import subprocess, sys
+
+offset = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+
 try:
     from pykrx import stock
 except ImportError:
@@ -90,17 +100,17 @@ def fetch_market_weekend(d0: str, d1: str, market: str):
 
     return to_day_df(d0), to_day_df(d1)
 
-def find_trading_days(n: int = 2, max_back: int = 20) -> list:
-    """최근 n 거래일 날짜 반환 (최신순). 주말·공휴일에도 동작."""
+def find_trading_days(max_collect: int = 40) -> list:
+    """실제 거래일 목록 반환 (최신순). 삼성전자 캘린더 기반으로 공휴일 자동 제외."""
     d = datetime.today()
     candidates = []
-    for _ in range(max_back * 2):
+    for _ in range(max_collect * 3):
         if d.weekday() < 5:
             candidates.append(d.strftime("%Y%m%d"))
-            if len(candidates) == max_back:
+            if len(candidates) == max_collect:
                 break
         d -= timedelta(days=1)
-    if len(candidates) < n:
+    if not candidates:
         return []
     try:
         df = stock.get_market_ohlcv(
@@ -108,17 +118,20 @@ def find_trading_days(n: int = 2, max_back: int = 20) -> list:
         )
         if df.empty:
             return []
-        dates = [idx.strftime("%Y%m%d") for idx in reversed(df.index)]
-        return dates[:n]
+        return [idx.strftime("%Y%m%d") for idx in reversed(df.index)]
     except Exception:
         return []
 
-dates = find_trading_days(2)
-if len(dates) < 2:
+def fmt_date(d: str) -> str:
+    return f"{int(d[4:6])}월 {int(d[6:8])}일"
+
+all_dates = find_trading_days()
+if len(all_dates) < offset + 2:
     print("INSUFFICIENT_DATA")
 else:
-    d0, d1 = dates  # d0=최근(금), d1=전일(목)
-    print(f"스캔 날짜: D-1={d1}, D-0={d0}")
+    d0 = all_dates[offset]      # 기준 D-0 (장다리도지+거래량 확인일)
+    d1 = all_dates[offset + 1]  # 기준 D-1 (상한가 확인일)
+    print(f"스캔 날짜: D-1={d1}({fmt_date(d1)}), D-0={d0}({fmt_date(d0)}) [offset={offset}]")
 
     kospi_d0  = safe_fetch(d0, "KOSPI")
     kospi_d1  = safe_fetch(d1, "KOSPI")
@@ -130,7 +143,7 @@ else:
         with ThreadPoolExecutor(max_workers=2) as ex:
             fk = ex.submit(fetch_market_weekend, d0, d1, "KOSPI")
             fq = ex.submit(fetch_market_weekend, d0, d1, "KOSDAQ")
-            kospi_d0,  kospi_d1  = fk.result()
+            kospi_d0, kospi_d1   = fk.result()
             kosdaq_d0, kosdaq_d1 = fq.result()
         print(f"[fallback] KOSPI={len(kospi_d0)}, KOSDAQ={len(kosdaq_d0)}")
     else:
@@ -148,16 +161,21 @@ else:
             if not (29.9 <= d1_pct <= 30.0):
                 continue
 
-            # 조건 2: D-0 도지 캔들 (|종가-시가|/(고가-저가) ≤ 0.10 + 위아래 수염 필수)
+            # 조건 2: D-0 장다리 도지 캔들
+            # 몸통 ≤ 10%, 위 수염 ≥ 30%, 아래 수염 ≥ 30%
             o  = df_d0.loc[ticker, 'open']
             h  = df_d0.loc[ticker, 'high']
             lo = df_d0.loc[ticker, 'low']
             c  = df_d0.loc[ticker, 'close']
-            body_range = h - lo
+            body_range   = h - lo
             if body_range == 0:
                 continue
-            doji_ratio = abs(c - o) / body_range
-            if doji_ratio > 0.10 or o == lo or c == h:
+            body_ratio   = abs(c - o) / body_range
+            upper_shadow = h - max(o, c)
+            lower_shadow = min(o, c) - lo
+            upper_ratio  = upper_shadow / body_range
+            lower_ratio  = lower_shadow / body_range
+            if body_ratio > 0.10 or upper_ratio < 0.30 or lower_ratio < 0.30:
                 continue
 
             # 조건 3: D-0 거래량 >= 20일 평균 x 1.5
@@ -175,37 +193,46 @@ else:
 
             name = stock.get_market_ticker_name(ticker)
             results.append({
-                "ticker": ticker, "name": name, "market": market_name,
-                "d1_pct":  round(float(d1_pct), 2),
-                "d0_doji": round(float(doji_ratio), 3),
-                "d0_vol":  round(float(vol_ratio), 2),
+                "ticker":   ticker, "name": name, "market": market_name,
+                "d1_pct":   round(float(d1_pct), 2),
+                "d0_body":  round(float(body_ratio), 3),
+                "d0_upper": round(float(upper_ratio), 3),
+                "d0_lower": round(float(lower_ratio), 3),
+                "d0_vol":   round(float(vol_ratio), 2),
             })
 
     print(f"RESULTS_COUNT={len(results)}")
+    print(f"DATE_D1={d1}|DATE_D0={d0}")
     for r in results:
-        print(f"STOCK|{r['ticker']}|{r['name']}|{r['market']}|{r['d1_pct']}|{r['d0_doji']}|{r['d0_vol']}")
+        print(f"STOCK|{r['ticker']}|{r['name']}|{r['market']}|{r['d1_pct']}|{r['d0_body']}|{r['d0_upper']}|{r['d0_lower']}|{r['d0_vol']}")
 ```
 
 ### Step 2: Parse output and send KakaoTalk
 
-After the script completes, parse stdout:
+Parse the `DATE_D1` and `DATE_D0` lines from stdout for message formatting.
+
+```
+fmt_date(d) = M월 D일  (e.g. "20260601" → "6월 1일")
+```
 
 **If `INSUFFICIENT_DATA`:**
-Send via `mcp__claude_ai_PlayMCP__KakaotalkChat-MemoChat`:
-`{ "message": "📊 [주식 조건 스캐너] 최근 거래일 데이터를 충분히 수집하지 못했습니다. 잠시 후 다시 시도해주세요." }`
+Send: `{ "message": "📊 [주식 조건 스캐너] 데이터 부족 (offset={offset}). 잠시 후 다시 시도해주세요." }`
 Then stop.
 
 **If `RESULTS_COUNT=0`:**
-Send: `{ "message": "📊 [주식 조건 스캐너] D-0: {d0}\n⚠️ 조건 만족 종목이 없습니다.\n🔍 D-1 상한가→D-0 도지+거래량 1.5배↑" }`
+Send: `{ "message": "📊 [주식 조건 스캐너]\n기준일: {fmt_date(d1)} ~ {fmt_date(d0)}\n⚠️ 조건 만족 종목이 없습니다.\n🔍 D-1 상한가→D-0 장다리도지+거래량 1.5배↑" }`
 Then stop.
 
 **If `RESULTS_COUNT=N` (N ≥ 1):**
 
-Message 1 — 헤더: `{ "message": "📊 [주식 조건 스캐너] D-0: {d0}\n✅ 조건 만족 종목 {N}개" }`
+Message 1 — 헤더:
+`{ "message": "📊 [주식 조건 스캐너]\n기준일: {fmt_date(d1)} ~ {fmt_date(d0)}\n✅ 조건 만족 종목 {N}개" }`
 
-For each STOCK line (i=1,2,...): `{ "message": "{i}. {name}({ticker})[{market}]\nD-1 상한가:+{d1_pct}% / D-0 도지:{d0_doji} 거래량:{d0_vol}x" }`
+For each STOCK line (i=1,2,...):
+`{ "message": "{i}. {name}({ticker})[{market}]\nD-1 상한가:+{d1_pct}% / D-0 몸통:{d0_body} 위:{d0_upper} 아래:{d0_lower} 거래:{d0_vol}x" }`
 
-Message last — 푸터: `{ "message": "🔍 조건: D-1 상한가→D-0 도지 캔들+거래량 1.5배↑" }`
+Message last — 푸터:
+`{ "message": "🔍 조건: D-1 상한가→D-0 장다리도지+거래량 1.5배↑" }`
 
 All messages sent via `mcp__claude_ai_PlayMCP__KakaotalkChat-MemoChat`.
 
@@ -214,59 +241,57 @@ All messages sent via `mcp__claude_ai_PlayMCP__KakaotalkChat-MemoChat`.
 | 조건 | 기준 | 설명 |
 |------|------|------|
 | D-1 상한가 | +29.9% ~ +30.0% | 전날 상한가 |
-| D-0 도지 캔들 | \|종가-시가\|/(고가-저가) ≤ 10%, 위아래 수염 존재 | 당일 십자 캔들 |
+| D-0 장다리 도지 — 몸통 | \|종가-시가\| / (고가-저가) ≤ 10% | 작은 몸통 |
+| D-0 장다리 도지 — 위 수염 | (고가 - max(시가,종가)) / (고가-저가) ≥ 30% | 긴 위 꼬리 |
+| D-0 장다리 도지 — 아래 수염 | (min(시가,종가) - 저가) / (고가-저가) ≥ 30% | 긴 아래 꼬리 |
 | D-0 거래량 | D-0 거래량 ≥ 20일 평균 × 1.5 | 평균 대비 1.5배 이상 |
+
+## offset 동작 예시 (일요일 2026-06-07 기준, 6/3 선거일 자동 제외)
+
+| 호출 | D-1 | D-0 | 기준일 |
+|------|-----|-----|--------|
+| `/stock-kakao-alert` | 6/4(목) | 6/5(금) | 6월 4일 ~ 6월 5일 |
+| `/stock-kakao-alert 1` | 6/2(화) | 6/4(목) | 6월 2일 ~ 6월 4일 |
+| `/stock-kakao-alert 2` | 6/1(월) | 6/2(화) | 6월 1일 ~ 6월 2일 |
+| `/stock-kakao-alert 3` | 5/29(목) | 6/1(월) | 5월 29일 ~ 6월 1일 |
 
 ## Output Format
 
 ### 결과 있을 때
 ```
-[메시지 1] 📊 [주식 조건 스캐너] D-0: 20260605
+[메시지 1] 📊 [주식 조건 스캐너]
+기준일: 6월 1일 ~ 6월 2일
 ✅ 조건 만족 종목 1개
 
 [메시지 2] 1. 로보스타(090360)[KOSDAQ]
-D-1 상한가:+29.95% / D-0 도지:0.08 거래량:3.2x
+D-1 상한가:+29.95% / D-0 몸통:0.05 위:0.42 아래:0.38 거래:3.2x
 
-[메시지 3] 🔍 조건: D-1 상한가→D-0 도지 캔들+거래량 1.5배↑
+[메시지 3] 🔍 조건: D-1 상한가→D-0 장다리도지+거래량 1.5배↑
 ```
 
 ### 결과 없을 때
 ```
-📊 [주식 조건 스캐너] D-0: 20260605
+📊 [주식 조건 스캐너]
+기준일: 6월 4일 ~ 6월 5일
 ⚠️ 조건 만족 종목이 없습니다.
-🔍 D-1 상한가→D-0 도지+거래량 1.5배↑
+🔍 D-1 상한가→D-0 장다리도지+거래량 1.5배↑
 ```
 
 ## Error Handling
 
 | 상황 | 처리 |
 |------|------|
-| pykrx 미설치 | 자동 `pip install pykrx` 후 재실행 |
-| 최근 20 평일 내 거래일 2일 미발견 | `INSUFFICIENT_DATA` → 재시도 안내 발송 |
+| pykrx 미설치 | 자동 pip install 후 재실행 |
+| offset이 너무 커서 데이터 부족 | INSUFFICIENT_DATA 발송 |
 | 주말·장외 (배치 empty) | FinanceDataReader(Naver Finance) fallback |
 | body_range == 0 | 해당 종목 건너뜀 |
 | len(hist) < 5 (상장 초기) | 해당 종목 건너뜀 |
 | 결과 0개 | "조건 만족 종목이 없습니다" 발송 |
 
-## 실행 시점별 동작 예시
-
-| 실행 시점 | D-1 | D-0 |
-|-----------|-----|-----|
-| 금요일 17시 이후 | 목 | 금 |
-| 토·일 | 목 | 금 |
-| 월요일 (월=휴장) | 목 | 금 |
-| 연휴 직후 | 연휴 전 2번째 거래일 | 마지막 거래일 |
-
-## Schedule Setup
-
-```
-/schedule "0 17 * * 1-5" /stock-kakao-alert
-```
-(평일 오후 5시 실행 — 장 마감 후 데이터 완전 집계 보장)
-
 ## Notes
 
-- **데이터 소스**: pykrx (KRX 공식) + FinanceDataReader(Naver Finance, 주말 fallback)
+- **데이터 소스**: pykrx (KRX 공식) + FinanceDataReader(Naver Finance, 주말/장외 fallback)
 - **대상 시장**: KOSPI + KOSDAQ 전 종목 (~2,700개)
 - **실행 시간**: 평일 약 30-60초 / 주말 약 2분 (fallback)
+- **거래일 캘린더**: 삼성전자(005930) 단일 ticker 조회 기반 — 공휴일·선거일 자동 제외
 - **v1 범위 외**: 미국 주식, 자동 매수/매도, 차트 이미지, 그룹 채팅방 발송
