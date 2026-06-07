@@ -59,7 +59,7 @@ fun HomeScreen(
     authViewModel: AuthViewModel = hiltViewModel(),
     memoViewModel: MemoViewModel = hiltViewModel()
 ) {
-    val userId = authViewModel.currentUserId
+    val userId by authViewModel.currentUserIdFlow.collectAsStateWithLifecycle()
     val monthlyDiaryMap by diaryViewModel.monthlyDiaryMap.collectAsStateWithLifecycle()
     val memos by memoViewModel.memos.collectAsStateWithLifecycle()
     val error by memoViewModel.error.collectAsStateWithLifecycle()

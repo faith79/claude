@@ -4,10 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.diaryapp.data.repository.AuthRepository
 import com.example.diaryapp.ui.auth.AuthUiState
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +26,14 @@ class AuthViewModel @Inject constructor(
 
     val isLoggedIn: Boolean get() = authRepository.isLoggedIn()
     val currentUserId: String get() = authRepository.getCurrentUser()?.uid ?: ""
+
+    val currentUserIdFlow: StateFlow<String> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            trySend(auth.currentUser?.uid ?: "")
+        }
+        FirebaseAuth.getInstance().addAuthStateListener(listener)
+        awaitClose { FirebaseAuth.getInstance().removeAuthStateListener(listener) }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, currentUserId)
     // Design Ref: joyary-login-biometric §2.4 — 저장된 생체 자격증명 여부
     val hasBiometricCredentials: Boolean get() = authRepository.hasBiometricCredentials()
 
