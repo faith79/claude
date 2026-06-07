@@ -1,0 +1,74 @@
+[
+  {
+    "timestamp": "2026-06-06T16:10:57.592Z",
+    "errorType": "unknown",
+    "category": "unknown",
+    "severity": "low",
+    "agentId": "adb6385ab3f1db9bd",
+    "agentType": "oh-my-claudecode:verifier",
+    "sessionId": "60e098b1-d494-4bb9-85fb-875a27821816",
+    "message": "",
+    "parseStatus": "ok",
+    "parseWarnings": null
+  },
+  {
+    "timestamp": "2026-06-06T16:10:58.228Z",
+    "errorType": "unknown",
+    "category": "unknown",
+    "severity": "low",
+    "agentId": null,
+    "agentType": null,
+    "sessionId": "60e098b1-d494-4bb9-85fb-875a27821816",
+    "message": "",
+    "parseStatus": "partial",
+    "parseWarnings": "StopFailure payload missing useful fields (keys: session_id,transcript_path,cwd,effort,hook_event_name,error,last_assistant_message)"
+  },
+  {
+    "timestamp": "2026-06-06T16:12:38.676Z",
+    "errorType": "unknown",
+    "category": "unknown",
+    "severity": "low",
+    "agentId": "aad1b82fb0a347141",
+    "agentType": "oh-my-claudecode:executor",
+    "sessionId": "60e098b1-d494-4bb9-85fb-875a27821816",
+    "message": "",
+    "parseStatus": "ok",
+    "parseWarnings": null
+  },
+  {
+    "timestamp": "2026-06-06T16:12:39.309Z",
+    "errorType": "unknown",
+    "category": "unknown",
+    "severity": "low",
+    "agentId": null,
+    "agentType": null,
+    "sessionId": "60e098b1-d494-4bb9-85fb-875a27821816",
+    "message": "",
+    "parseStatus": "partial",
+    "parseWarnings": "StopFailure payload missing useful fields (keys: session_id,transcript_path,cwd,effort,hook_event_name,error,last_assistant_message)"
+  },
+  {
+    "timestamp": "2026-06-06T16:13:21.305Z",
+    "errorType": "unknown",
+    "category": "unknown",
+    "severity": "low",
+    "agentId": "aad1b82fb0a347141",
+    "agentType": "oh-my-claudecode:executor",
+    "sessionId": "60e098b1-d494-4bb9-85fb-875a27821816",
+    "message": "",
+    "parseStatus": "ok",
+    "parseWarnings": null
+  },
+  {
+    "timestamp": "2026-06-06T16:13:22.060Z",
+    "errorType": "unknown",
+    "category": "unknown",
+    "severity": "low",
+    "agentId": null,
+    "agentType": null,
+    "sessionId": "60e098b1-d494-4bb9-85fb-875a27821816",
+    "message": "",
+    "parseStatus": "partial",
+    "parseWarnings": "StopFailure payload missing useful fields (keys: session_id,transcript_path,cwd,effort,hook_event_name,error,last_assistant_message)"
+  }
+]
