@@ -3,8 +3,11 @@ package com.example.diaryapp.ui.memo
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -14,12 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.data.model.MemoEntry
 import com.example.diaryapp.data.model.MemoType
 import com.example.diaryapp.data.model.TodoItem
+import com.example.diaryapp.viewmodel.AuthViewModel
+import com.example.diaryapp.viewmodel.MemoViewModel
 import java.util.UUID
 
-// Design Ref: diary-tab-memo §FR-03 — 메모 목록 (탭 1 콘텐츠, FAB 없음 — HomeScreen Scaffold에서 관리)
+// Design Ref: diary-tab-memo §FR-03 — 메모 목록 (탭 1 콘텐츠)
 @Composable
 fun MemoListContent(
     memos: List<MemoEntry>,
@@ -126,84 +133,150 @@ private fun MemoCard(
     }
 }
 
-// Design Ref: diary-tab-memo §FR-04/05 — 메모 타입 선택 + TODO 항목 편집
+// Design Ref: tab-memo-fullscreen — ModalBottomSheet 대체 전체화면 에디터 + verticalScroll
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MemoEditorSheet(
-    initial: MemoEntry?,
-    onDismiss: () -> Unit,
-    onSave: (MemoEntry) -> Unit
+fun MemoEditorScreen(
+    memoId: String,
+    onBack: () -> Unit,
+    memoViewModel: MemoViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
-    var type    by remember { mutableStateOf(initial?.type ?: MemoType.TEXT) }
-    var title   by remember { mutableStateOf(initial?.title ?: "") }
+    val userId by authViewModel.currentUserIdFlow.collectAsStateWithLifecycle()
+    val memos  by memoViewModel.memos.collectAsStateWithLifecycle()
+    val isLoading by memoViewModel.isLoading.collectAsStateWithLifecycle()
+    val error     by memoViewModel.error.collectAsStateWithLifecycle()
+
+    val initial = remember(memoId, memos) {
+        if (memoId.isEmpty()) null else memos.find { it.id == memoId }
+    }
+
+    var type    by remember { mutableStateOf(initial?.type    ?: MemoType.TEXT) }
+    var title   by remember { mutableStateOf(initial?.title   ?: "") }
     var content by remember { mutableStateOf(initial?.content ?: "") }
-    var todos   by remember { mutableStateOf(initial?.todos ?: emptyList<TodoItem>()) }
+    var todos   by remember { mutableStateOf(initial?.todos   ?: emptyList<TodoItem>()) }
     var newTodo by remember { mutableStateOf("") }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 편집 모드: memos 로드 후 initial이 처음 채워지면 필드 초기화
+    var fieldsReady by remember { mutableStateOf(memoId.isEmpty()) }
+    LaunchedEffect(initial) {
+        if (!fieldsReady && initial != null) {
+            type    = initial.type
+            title   = initial.title
+            content = initial.content
+            todos   = initial.todos
+            fieldsReady = true
+        }
+    }
+    LaunchedEffect(userId) {
+        if (memoId.isNotEmpty() && userId.isNotEmpty() && memos.isEmpty()) {
+            memoViewModel.loadMemos(userId)
+        }
+    }
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+            memoViewModel.clearError()
+        }
+    }
+
+    fun save() {
+        if (userId.isEmpty()) return
+        val now = System.currentTimeMillis()
+        memoViewModel.saveMemo(
+            userId,
+            (initial ?: MemoEntry()).copy(
+                userId    = userId,
+                type      = type,
+                title     = title.trim(),
+                content   = content,
+                todos     = todos,
+                updatedAt = now,
+                createdAt = if (initial == null) now else initial.createdAt
+            )
+        )
+        onBack()
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text(if (memoId.isEmpty()) "새 메모" else "메모 편집") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로")
+                    }
+                },
+                actions = {
+                    TextButton(onClick = { save() }, enabled = !isLoading) {
+                        Text("저장", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
         ) {
-            Text(
-                if (initial == null) "새 메모" else "메모 편집",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             // 타입 선택
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = type == MemoType.TEXT,
-                    onClick = { type = MemoType.TEXT },
-                    label = { Text("메모") }
+                    onClick  = { type = MemoType.TEXT },
+                    label    = { Text("메모") }
                 )
                 FilterChip(
                     selected = type == MemoType.TODO,
-                    onClick = { type = MemoType.TODO },
-                    label = { Text("TODO") }
+                    onClick  = { type = MemoType.TODO },
+                    label    = { Text("TODO") }
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = title,
+                value         = title,
                 onValueChange = { title = it },
-                label = { Text("제목 (선택)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label         = { Text("제목 (선택)") },
+                modifier      = Modifier.fillMaxWidth(),
+                singleLine    = true
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             if (type == MemoType.TEXT) {
                 OutlinedTextField(
-                    value = content,
+                    value         = content,
                     onValueChange = { content = it },
-                    label = { Text("내용") },
-                    modifier = Modifier
+                    label         = { Text("내용") },
+                    modifier      = Modifier
                         .fillMaxWidth()
-                        .height(160.dp),
-                    maxLines = 8
+                        .heightIn(min = 200.dp),
+                    minLines = 8
                 )
             } else {
-                // TODO 항목 목록
                 todos.forEachIndexed { index, item ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
-                            checked = item.isDone,
+                            checked         = item.isDone,
                             onCheckedChange = { checked ->
                                 todos = todos.toMutableList().also { it[index] = item.copy(isDone = checked) }
                             }
                         )
                         OutlinedTextField(
-                            value = item.text,
+                            value         = item.text,
                             onValueChange = { text ->
                                 todos = todos.toMutableList().also { it[index] = item.copy(text = text) }
                             },
-                            modifier = Modifier.weight(1f),
+                            modifier   = Modifier.weight(1f),
                             singleLine = true
                         )
                         IconButton(onClick = {
@@ -213,18 +286,17 @@ fun MemoEditorSheet(
                         }
                     }
                 }
-                // 새 항목 추가
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
-                        value = newTodo,
+                        value         = newTodo,
                         onValueChange = { newTodo = it },
-                        label = { Text("항목 추가") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
+                        label         = { Text("항목 추가") },
+                        modifier      = Modifier.weight(1f),
+                        singleLine    = true
                     )
                     IconButton(onClick = {
                         if (newTodo.isNotBlank()) {
-                            todos = todos + TodoItem(id = UUID.randomUUID().toString(), text = newTodo.trim())
+                            todos   = todos + TodoItem(id = UUID.randomUUID().toString(), text = newTodo.trim())
                             newTodo = ""
                         }
                     }) {
@@ -232,25 +304,11 @@ fun MemoEditorSheet(
                     }
                 }
             }
+        }
 
-            Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    val now = System.currentTimeMillis()
-                    onSave(
-                        (initial ?: MemoEntry()).copy(
-                            type      = type,
-                            title     = title.trim(),
-                            content   = content,
-                            todos     = todos,
-                            updatedAt = now,
-                            createdAt = if (initial == null) now else initial.createdAt
-                        )
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("저장")
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
         }
     }

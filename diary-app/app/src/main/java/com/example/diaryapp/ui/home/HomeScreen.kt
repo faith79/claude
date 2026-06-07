@@ -31,7 +31,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.data.model.DiaryEntry
 import com.example.diaryapp.data.model.MemoEntry
-import com.example.diaryapp.ui.memo.MemoEditorSheet
 import com.example.diaryapp.ui.memo.MemoListContent
 import com.example.diaryapp.ui.theme.DateSaturday
 import com.example.diaryapp.ui.theme.DateSunday
@@ -55,6 +54,8 @@ fun HomeScreen(
     onEditDiary: (String, String) -> Unit,
     onSettings: () -> Unit,
     onLogout: () -> Unit,
+    onAddMemo: () -> Unit = {},
+    onEditMemo: (String) -> Unit = {},
     diaryViewModel: DiaryViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
     memoViewModel: MemoViewModel = hiltViewModel()
@@ -66,9 +67,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var selectedTab    by remember { mutableIntStateOf(0) }
-    var showMemoEditor by remember { mutableStateOf(false) }
-    var editingMemo    by remember { mutableStateOf<MemoEntry?>(null) }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     val BASE_YEAR = 2000
     val TOTAL_PAGES = (2100 - BASE_YEAR) * 12
@@ -119,20 +118,18 @@ fun HomeScreen(
                 }
             )
         },
-        // Design Ref: diary-tab-memo §FR-01 — 하단 NavigationBar (일기/메모장)
+        // Design Ref: tab-memo-fullscreen — 라벨 제거, 높이 56dp로 압축
         bottomBar = {
-            NavigationBar {
+            NavigationBar(modifier = Modifier.height(56.dp)) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.DateRange, "일기") },
-                    label = { Text("일기") }
+                    onClick  = { selectedTab = 0 },
+                    icon     = { Icon(Icons.Default.DateRange, "일기") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.Description, "메모장") },
-                    label = { Text("메모장") }
+                    onClick  = { selectedTab = 1 },
+                    icon     = { Icon(Icons.Default.Description, "메모장") }
                 )
             }
         },
@@ -149,7 +146,7 @@ fun HomeScreen(
                     }
                 ) { Icon(Icons.Default.Add, "일기 추가") }
                 else -> FloatingActionButton(
-                    onClick = { editingMemo = null; showMemoEditor = true }
+                    onClick = { onAddMemo() }
                 ) { Icon(Icons.Default.Add, "메모 추가") }
             }
         }
@@ -211,32 +208,13 @@ fun HomeScreen(
                 MemoListContent(
                     memos = memos,
                     onDeleteMemo = { memoViewModel.deleteMemo(userId, it) },
-                    onEditMemo = { editingMemo = it; showMemoEditor = true },
+                    onEditMemo = { memo -> onEditMemo(memo.id) },
                     modifier = Modifier.padding(padding)
                 )
             }
         }
     }
 
-    // Design Ref: diary-tab-memo §FR-04/05 — 메모 편집 시트
-    if (showMemoEditor) {
-        MemoEditorSheet(
-            initial = editingMemo,
-            onDismiss = { showMemoEditor = false },
-            onSave = { memo ->
-                val ts = System.currentTimeMillis()
-                memoViewModel.saveMemo(
-                    userId,
-                    memo.copy(
-                        userId    = userId,
-                        updatedAt = ts,
-                        createdAt = if (memo.id.isEmpty()) ts else memo.createdAt
-                    )
-                )
-                showMemoEditor = false
-            }
-        )
-    }
 }
 
 @Composable

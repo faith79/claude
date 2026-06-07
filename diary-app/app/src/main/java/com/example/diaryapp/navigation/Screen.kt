@@ -11,4 +11,7 @@ sealed class Screen(val route: String) {
         fun createRoute(date: String, id: String = "") = "diary_editor?date=$date&id=$id"
     }
     object Settings : Screen("settings")
+    object MemoEditor : Screen("memo_editor?id={id}") {
+        fun createRoute(id: String = "") = "memo_editor?id=$id"
+    }
 }

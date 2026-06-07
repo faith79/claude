@@ -14,9 +14,11 @@ import com.example.diaryapp.ui.auth.SignUpScreen
 import com.example.diaryapp.ui.diary.DiaryDetailScreen
 import com.example.diaryapp.ui.diary.DiaryEditorScreen
 import com.example.diaryapp.ui.home.HomeScreen
+import com.example.diaryapp.ui.memo.MemoEditorScreen
 import com.example.diaryapp.ui.settings.SettingsScreen
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryViewModel
+import com.example.diaryapp.viewmodel.MemoViewModel
 import com.example.diaryapp.viewmodel.SettingsViewModel
 
 @Composable
@@ -49,9 +51,10 @@ fun NavGraph(
         }
 
         composable(Screen.Home.route) {
-            // Design Ref: diary-ux-fixes §SC-02 — Activity 스코프 VM 공유 (invalidateCache가 HomeScreen에 즉시 반영)
+            // Design Ref: diary-ux-fixes §SC-02 — Activity 스코프 VM 공유
             val activity = LocalContext.current as ComponentActivity
             val diaryViewModel: DiaryViewModel = hiltViewModel(activity)
+            val memoViewModel: MemoViewModel = hiltViewModel(activity)
             HomeScreen(
                 onDateSelected = { date ->
                     navController.navigate(Screen.DiaryDetail.createRoute(date))
@@ -68,7 +71,11 @@ fun NavGraph(
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 },
-                diaryViewModel = diaryViewModel
+                // Design Ref: tab-memo-fullscreen — 전체화면 에디터 네비게이션
+                onAddMemo  = { navController.navigate(Screen.MemoEditor.createRoute()) },
+                onEditMemo = { id -> navController.navigate(Screen.MemoEditor.createRoute(id)) },
+                diaryViewModel = diaryViewModel,
+                memoViewModel  = memoViewModel
             )
         }
 
@@ -130,6 +137,21 @@ fun NavGraph(
                     }
                 },
                 settingsViewModel = settingsViewModel
+            )
+        }
+
+        // Design Ref: tab-memo-fullscreen — 전체화면 메모 에디터
+        composable(
+            route = Screen.MemoEditor.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType; defaultValue = "" })
+        ) { backStack ->
+            val id = backStack.arguments?.getString("id") ?: ""
+            val activity = LocalContext.current as ComponentActivity
+            val memoViewModel: MemoViewModel = hiltViewModel(activity)
+            MemoEditorScreen(
+                memoId       = id,
+                onBack       = { navController.popBackStack() },
+                memoViewModel = memoViewModel
             )
         }
     }
