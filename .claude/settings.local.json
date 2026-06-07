@@ -62,7 +62,15 @@
       "PowerShell(& \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"D:\\\\GIT\\\\claude\\\\_fdr_test.py\")",
       "PowerShell(& \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install FinanceDataReader 2>&1 | Select-Object -Last 5)",
       "PowerShell(& \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install finance-datareader 2>&1 | Select-Object -Last 5)",
-      "PowerShell(& \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"D:\\\\GIT\\\\claude\\\\_scan_full.py\" 2>$null)"
+      "PowerShell(& \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"D:\\\\GIT\\\\claude\\\\_scan_full.py\" 2>$null)",
+      "PowerShell(& \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m py_compile \"D:\\\\GIT\\\\claude\\\\stock_backtest.py\"; if \\($?\\) { \"SYNTAX OK\" } else { \"SYNTAX ERROR\" })",
+      "mcp__plugin_oh-my-claudecode_t__state_list_active",
+      "mcp__plugin_oh-my-claudecode_t__state_read",
+      "mcp__plugin_bkit_bkit-pdca__bkit_pdca_status",
+      "mcp__plugin_bkit_bkit-pdca__bkit_report_read",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; & \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"D:\\\\GIT\\\\claude\\\\stock_backtest.py\")",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; & \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"D:\\\\GIT\\\\claude\\\\_stock_scan.py\" 1 2>$null)",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; & \"C:\\\\Users\\\\JOEY\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"D:\\\\GIT\\\\claude\\\\_stock_scan.py\" 3 2>$null)"
     ]
   }
 }

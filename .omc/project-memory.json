@@ -1,0 +1,378 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1780756177072,
+  "projectRoot": "D:\\GIT\\claude",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "diary-app": {
+      "path": "diary-app",
+      "purpose": null,
+      "fileCount": 12,
+      "lastAccessed": 1780756177024,
+      "keyFiles": [
+        "build.gradle.kts",
+        "firebase.json",
+        "firestore.rules",
+        "gradle.properties",
+        "gradlew"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1780756177025,
+      "keyFiles": []
+    },
+    "diary-app\\app": {
+      "path": "diary-app\\app",
+      "purpose": "Application code",
+      "fileCount": 2,
+      "lastAccessed": 1780756177025,
+      "keyFiles": [
+        "build.gradle.kts",
+        "google-services.json"
+      ]
+    },
+    "diary-app\\build": {
+      "path": "diary-app\\build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1780756177026,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": ".claude\\skills\\stock-kakao-alert\\SKILL.md",
+      "accessCount": 18,
+      "lastAccessed": 1780824730205,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\settings.local.json",
+      "accessCount": 15,
+      "lastAccessed": 1780761350237,
+      "type": "file"
+    },
+    {
+      "path": "stock_backtest.py",
+      "accessCount": 9,
+      "lastAccessed": 1780824914901,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\.claude\\settings.json",
+      "accessCount": 6,
+      "lastAccessed": 1780758480539,
+      "type": "file"
+    },
+    {
+      "path": "_stock_test.py",
+      "accessCount": 6,
+      "lastAccessed": 1780808532679,
+      "type": "file"
+    },
+    {
+      "path": "_stock_scan.py",
+      "accessCount": 6,
+      "lastAccessed": 1780825090525,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 4,
+      "lastAccessed": 1780762103656,
+      "type": "directory"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\AppData\\Local\\Temp\\claude\\D--GIT-claude\\88ad0dae-6ae9-4cfe-8292-ca3891589a48\\tasks\\bda1ltxyi.output",
+      "accessCount": 4,
+      "lastAccessed": 1780817168841,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\AppData\\Local\\Temp\\claude\\D--GIT-claude\\60e098b1-d494-4bb9-85fb-875a27821816\\tasks\\bpi8bxe0q.output",
+      "accessCount": 2,
+      "lastAccessed": 1780756736814,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\skills\\stock-kakao-alert",
+      "accessCount": 2,
+      "lastAccessed": 1780807117409,
+      "type": "directory"
+    },
+    {
+      "path": "_scan.py",
+      "accessCount": 2,
+      "lastAccessed": 1780809020715,
+      "type": "file"
+    },
+    {
+      "path": "_fdr_test.py",
+      "accessCount": 2,
+      "lastAccessed": 1780809766018,
+      "type": "file"
+    },
+    {
+      "path": "stock_backtest_report.txt",
+      "accessCount": 2,
+      "lastAccessed": 1780824750759,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\.claude\\plugins\\cache\\omc\\oh-my-claudecode\\4.14.5\\skills\\omc-setup\\phases\\01-install-claude-md.md",
+      "accessCount": 1,
+      "lastAccessed": 1780756468873,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\.claude\\plugins\\cache\\omc\\oh-my-claudecode\\4.14.5\\skills\\omc-setup\\phases\\02-configure.md",
+      "accessCount": 1,
+      "lastAccessed": 1780756503821,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\.claude\\plugins\\cache\\omc\\oh-my-claudecode\\4.14.5\\skills\\omc-setup\\phases\\03-integrations.md",
+      "accessCount": 1,
+      "lastAccessed": 1780756756363,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\.claude\\plugins\\cache\\omc\\oh-my-claudecode\\4.14.5\\skills\\omc-setup\\phases\\04-welcome.md",
+      "accessCount": 1,
+      "lastAccessed": 1780756878883,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757311215,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757311927,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\agents\\requirements-planner.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757312183,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757494243,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757508975,
+      "type": "file"
+    },
+    {
+      "path": "docs\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757519700,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757531934,
+      "type": "file"
+    },
+    {
+      "path": "docs\\01-plan\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757535544,
+      "type": "file"
+    },
+    {
+      "path": "docs\\02-design\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757539204,
+      "type": "file"
+    },
+    {
+      "path": "docs\\03-analysis\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757542774,
+      "type": "file"
+    },
+    {
+      "path": "docs\\04-report\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757545358,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757563141,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\data\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757572767,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\di\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757578271,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\navigation\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757583965,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\notification\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757592514,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\security\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757595112,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\ui\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757602308,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\viewmodel\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757610359,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\data\\model\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757620966,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\data\\repository\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757627592,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\data\\source\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757633793,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\data\\util\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757639336,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\ui\\auth\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757645652,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\ui\\components\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757651688,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\ui\\diary\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757657889,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\ui\\home\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757663432,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\ui\\settings\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757668996,
+      "type": "file"
+    },
+    {
+      "path": "diary-app\\app\\src\\main\\java\\com\\example\\diaryapp\\ui\\theme\\AGENTS.md",
+      "accessCount": 1,
+      "lastAccessed": 1780757675771,
+      "type": "file"
+    },
+    {
+      "path": ".claude\\skills",
+      "accessCount": 1,
+      "lastAccessed": 1780760865895,
+      "type": "directory"
+    },
+    {
+      "path": ".claude\\skills\\stock-kakao-alert\\write_skill.js",
+      "accessCount": 1,
+      "lastAccessed": 1780806780397,
+      "type": "file"
+    },
+    {
+      "path": "_scan_full.py",
+      "accessCount": 1,
+      "lastAccessed": 1780809921001,
+      "type": "file"
+    },
+    {
+      "path": "C:\\Users\\JOEY\\AppData\\Local\\Temp\\claude\\D--GIT-claude\\88ad0dae-6ae9-4cfe-8292-ca3891589a48\\tasks\\bur75njco.output",
+      "accessCount": 1,
+      "lastAccessed": 1780813723109,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

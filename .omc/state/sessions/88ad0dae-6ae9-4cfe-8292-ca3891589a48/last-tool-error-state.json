@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"Remove-Item \\\"D:\\\\GIT\\\\claude\\\\_scan_full.py\\\", \\\"D:\\\\GIT\\\\claude\\\\_fdr_test.py\\\" -ErrorAction SilentlyContinue\\nGet-Item \\\"D:\\\\GIT\\\\claude\\\\_scan_full.py\\\", \\\"D:\\\\GIT\\\\claude\\\\_fdr_test.p...",
+  "error": "Exit code 127\n/usr/bin/bash: line 4: Remove-Item: command not found\n/usr/bin/bash: line 5: Get-Item: command not found",
+  "timestamp": "2026-06-07T05:34:52.473Z",
+  "retry_count": 1
+}

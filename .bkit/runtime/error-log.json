@@ -70,5 +70,17 @@
     "message": "",
     "parseStatus": "partial",
     "parseWarnings": "StopFailure payload missing useful fields (keys: session_id,transcript_path,cwd,effort,hook_event_name,error,last_assistant_message)"
+  },
+  {
+    "timestamp": "2026-06-07T07:45:21.130Z",
+    "errorType": "unknown",
+    "category": "unknown",
+    "severity": "low",
+    "agentId": null,
+    "agentType": null,
+    "sessionId": "88ad0dae-6ae9-4cfe-8292-ca3891589a48",
+    "message": "",
+    "parseStatus": "partial",
+    "parseWarnings": "StopFailure payload missing useful fields (keys: session_id,transcript_path,cwd,effort,hook_event_name,error,last_assistant_message)"
   }
 ]

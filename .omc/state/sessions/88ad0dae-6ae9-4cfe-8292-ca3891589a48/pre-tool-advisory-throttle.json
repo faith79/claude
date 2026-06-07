@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "entries": {
+    "445ed27a3872b681d98190bae61ccb84954e1bc4e140df5370be958dee776b3a": {
+      "last_emitted_at_ms": 1780818320293,
+      "message": "Verify changes work after editing. Test functionality before marking complete."
+    },
+    "1bb6914bc42b891c26d46c8ae2fd4f44071f59862e89dc550f4c82877b700216": {
+      "last_emitted_at_ms": 1780817586814,
+      "message": "The boulder never stops. Continue until all tasks complete."
+    },
+    "26cb7f3d87eb8c2d12141ad11bbbaa6df2ed2bdfd3b40ba38aead289af183db3": {
+      "last_emitted_at_ms": 1780817295656,
+      "message": "Spawning agent: unknown (inherit) | Task: Read backtest report"
+    },
+    "79a93d4a2f8f50b95f852280616242fee1855dc99a3c75211917f55e72e95fae": {
+      "last_emitted_at_ms": 1780817271643,
+      "message": "Use parallel execution for independent tasks. Use run_in_background for long operations (npm install, builds, tests)."
+    },
+    "7e59ffe71f0de290b36ae05cff44de7bc6b81f1da54a66124f9042d53f20810c": {
+      "last_emitted_at_ms": 1780817219595,
+      "message": "Spawning agent: oh-my-claudecode:architect (sonnet) | Task: Architect verification of backtest report"
+    },
+    "466399dafa2d20f60587180bad0a07358eb7f2bce724df0ff682f038ad33f5ad": {
+      "last_emitted_at_ms": 1780817206473,
+      "message": "Read multiple files in parallel when possible for faster analysis."
+    },
+    "459c54e5f35d6a58dcd90d2aecc21fa6d1f35d241bc5b134c506f87dc7b6d67b": {
+      "last_emitted_at_ms": 1780816888556,
+      "message": "Combine searches in parallel when investigating multiple patterns."
+    }
+  },
+  "updated_at": "2026-06-07T07:45:20.293Z"
+}

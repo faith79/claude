@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"type D:\\\\GIT\\\\claude\\\\stock_backtest_report.txt\",\"description\":\"Read backtest report\"}",
+  "error": "Exit code 1\n/usr/bin/bash: line 4: type: D:GITclaudestock_backtest_report.txt: not found",
+  "timestamp": "2026-06-07T09:32:27.153Z",
+  "retry_count": 1
+}

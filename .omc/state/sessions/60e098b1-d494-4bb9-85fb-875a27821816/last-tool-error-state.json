@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"bash -c 'python3 -c \\\"\\nimport json, os\\n\\nout = r\\\\\\\"D:/GIT/claude/.claude/skills/stock-kakao-alert/SKILL.md\\\\\\\"\\n\\ncontent = open(out, \\\\\\\"r\\\\\\\", encoding=\\\\\\\"utf-8\\\\\\\").read() if os.pat...",
+  "error": "Exit code 49\nPython",
+  "timestamp": "2026-06-06T16:04:36.378Z",
+  "retry_count": 2
+}
