@@ -22,12 +22,18 @@ class MemoViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    fun clearError() { _error.value = null }
+
     fun loadMemos(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 _memos.value = memoRepository.getMemos(userId)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                _error.value = "메모 로드 실패: ${e.localizedMessage ?: e.javaClass.simpleName}"
             } finally {
                 _isLoading.value = false
             }
@@ -36,10 +42,16 @@ class MemoViewModel @Inject constructor(
 
     fun saveMemo(userId: String, memo: MemoEntry) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             try {
                 memoRepository.saveMemo(userId, memo)
-                loadMemos(userId)
-            } catch (_: Exception) {
+                // 저장 완료 후 인라인으로 목록 갱신 (fire-and-forget 제거)
+                _memos.value = memoRepository.getMemos(userId)
+            } catch (e: Exception) {
+                _error.value = "저장 실패: ${e.localizedMessage ?: e.javaClass.simpleName}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }

@@ -62,7 +62,9 @@ fun HomeScreen(
     val userId = authViewModel.currentUserId
     val monthlyDiaryMap by diaryViewModel.monthlyDiaryMap.collectAsStateWithLifecycle()
     val memos by memoViewModel.memos.collectAsStateWithLifecycle()
+    val error by memoViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var selectedTab    by remember { mutableIntStateOf(0) }
     var showMemoEditor by remember { mutableStateOf(false) }
@@ -98,8 +100,15 @@ fun HomeScreen(
             memoViewModel.loadMemos(userId)
         }
     }
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+            memoViewModel.clearError()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("조이어리") },
