@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.*
@@ -28,20 +30,23 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.data.model.DiaryEntry
+import com.example.diaryapp.data.model.MemoEntry
+import com.example.diaryapp.ui.memo.MemoEditorSheet
+import com.example.diaryapp.ui.memo.MemoListContent
 import com.example.diaryapp.ui.theme.DateSaturday
 import com.example.diaryapp.ui.theme.DateSunday
 import com.example.diaryapp.ui.theme.LocalThemeColors
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryViewModel
+import com.example.diaryapp.viewmodel.MemoViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
-// Design Ref: §5.1 — 달력 상단 고정 레이아웃 (FR-02), HorizontalPager 월 스와이프 유지
-// Plan SC: SC-04 — FAB Upsert, SC-06 — 월 스와이프
-// G-02 fix: joyary-upgrade-v6 — 검색 버튼 제거에 따른 Dead Code 일괄 삭제
+// Design Ref: §5.1 — 달력 상단 고정 레이아웃, HorizontalPager 월 스와이프 유지
+// Design Ref: diary-tab-memo — NavigationBar(일기/메모장) + MemoViewModel 추가
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -51,12 +56,17 @@ fun HomeScreen(
     onSettings: () -> Unit,
     onLogout: () -> Unit,
     diaryViewModel: DiaryViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    memoViewModel: MemoViewModel = hiltViewModel()
 ) {
     val userId = authViewModel.currentUserId
-    // Design Ref: calendar-swipe-performance §CHANGE-06 — 달별 독립 소비, diaries 단일맵 제거
     val monthlyDiaryMap by diaryViewModel.monthlyDiaryMap.collectAsStateWithLifecycle()
+    val memos by memoViewModel.memos.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+
+    var selectedTab    by remember { mutableIntStateOf(0) }
+    var showMemoEditor by remember { mutableStateOf(false) }
+    var editingMemo    by remember { mutableStateOf<MemoEntry?>(null) }
 
     val BASE_YEAR = 2000
     val TOTAL_PAGES = (2100 - BASE_YEAR) * 12
@@ -82,6 +92,12 @@ fun HomeScreen(
             diaryViewModel.prefetchMonth(userId, current.plusMonths(1))
         }
     }
+    // Design Ref: diary-tab-memo §FR-03 — 메모장 탭 진입 시 목록 로드
+    LaunchedEffect(selectedTab, userId) {
+        if (selectedTab == 1 && userId.isNotEmpty()) {
+            memoViewModel.loadMemos(userId)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -94,78 +110,123 @@ fun HomeScreen(
                 }
             )
         },
+        // Design Ref: diary-tab-memo §FR-01 — 하단 NavigationBar (일기/메모장)
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = { Icon(Icons.Default.DateRange, "일기") },
+                    label = { Text("일기") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = { Icon(Icons.Default.Description, "메모장") },
+                    label = { Text("메모장") }
+                )
+            }
+        },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    scope.launch {
-                        val todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                        val existing = diaryViewModel.getEntryByDate(userId, todayDate)
-                        if (existing != null) {
-                            onEditDiary(todayDate, existing.id)
-                        } else {
-                            onAddDiary(todayDate)
+            when (selectedTab) {
+                0 -> FloatingActionButton(
+                    onClick = {
+                        scope.launch {
+                            val todayDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                            val existing = diaryViewModel.getEntryByDate(userId, todayDate)
+                            if (existing != null) onEditDiary(todayDate, existing.id)
+                            else onAddDiary(todayDate)
                         }
                     }
-                }
-            ) {
-                Icon(Icons.Default.Add, "일기 추가")
+                ) { Icon(Icons.Default.Add, "일기 추가") }
+                else -> FloatingActionButton(
+                    onClick = { editingMemo = null; showMemoEditor = true }
+                ) { Icon(Icons.Default.Add, "메모 추가") }
             }
         }
     ) { padding ->
-        // Design Ref: §5.1 — 달력 고정(상단) + 아래 영역 weight(1f) (FR-02)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // 달력 카드 — 상단 고정 (weight 없음)
-            // Design Ref: joyary-upgrade-v3 §5.3 — LocalThemeColors.calendarBg 적용 (FR-01,FR-03)
-            val themeColors = LocalThemeColors.current
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = themeColors.calendarBg),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth()
-                ) { page ->
-                    val pageMonth = pageToYearMonth(page)
-                    // Design Ref: calendar-swipe-performance §CHANGE-06 — 각 페이지 독립 슬라이스
-                    val monthKey = "${userId}_${pageMonth}"
-                    val diaryMap = remember(monthlyDiaryMap, monthKey) {
-                        monthlyDiaryMap[monthKey]?.associateBy { it.date } ?: emptyMap()
-                    }
-                    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                        // Design Ref: settings-defaults-calendar-year-nav §CHANGE-03 — 년 단위 이동
-                        CalendarHeader(
-                            currentMonth = pageMonth,
-                            onPrev = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage - 12)
-                                }
-                            },
-                            onNext = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 12)
-                                }
+        when (selectedTab) {
+            0 -> {
+                // Design Ref: §5.1 — 달력 고정(상단) (FR-02), 일기 탭 기존 기능 유지
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    val themeColors = LocalThemeColors.current
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = themeColors.calendarBg),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { page ->
+                            val pageMonth = pageToYearMonth(page)
+                            val monthKey = "${userId}_${pageMonth}"
+                            val diaryMap = remember(monthlyDiaryMap, monthKey) {
+                                monthlyDiaryMap[monthKey]?.associateBy { it.date } ?: emptyMap()
                             }
-                        )
-                        CalendarGrid(
-                            yearMonth = pageMonth,
-                            diaryMap = diaryMap,
-                            onDateClick = { date ->
-                                if (diaryMap.containsKey(date)) onDateSelected(date)
-                                else onAddDiary(date)
+                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                // Design Ref: settings-defaults-calendar-year-nav §CHANGE-03 — 년 단위 이동
+                                CalendarHeader(
+                                    currentMonth = pageMonth,
+                                    onPrev = {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage - 12)
+                                        }
+                                    },
+                                    onNext = {
+                                        scope.launch {
+                                            pagerState.animateScrollToPage(pagerState.currentPage + 12)
+                                        }
+                                    }
+                                )
+                                CalendarGrid(
+                                    yearMonth = pageMonth,
+                                    diaryMap = diaryMap,
+                                    onDateClick = { date ->
+                                        if (diaryMap.containsKey(date)) onDateSelected(date)
+                                        else onAddDiary(date)
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
                 }
             }
-
-            // Design Ref: calendar-diary-bg-fix §FR-01 — weight 필러 제거, 달력 상단 정렬
+            else -> {
+                // Design Ref: diary-tab-memo §FR-03 — 메모장 탭 콘텐츠
+                MemoListContent(
+                    memos = memos,
+                    onDeleteMemo = { memoViewModel.deleteMemo(userId, it) },
+                    onEditMemo = { editingMemo = it; showMemoEditor = true },
+                    modifier = Modifier.padding(padding)
+                )
+            }
         }
+    }
+
+    // Design Ref: diary-tab-memo §FR-04/05 — 메모 편집 시트
+    if (showMemoEditor) {
+        MemoEditorSheet(
+            initial = editingMemo,
+            onDismiss = { showMemoEditor = false },
+            onSave = { memo ->
+                val ts = System.currentTimeMillis()
+                memoViewModel.saveMemo(
+                    userId,
+                    memo.copy(
+                        userId    = userId,
+                        updatedAt = ts,
+                        createdAt = if (memo.id.isEmpty()) ts else memo.createdAt
+                    )
+                )
+                showMemoEditor = false
+            }
+        )
     }
 }
 
@@ -209,7 +270,7 @@ private fun CalendarGrid(
     val today = LocalDate.now()
     val firstDay = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
-    val startDayOfWeek = (firstDay.dayOfWeek.value % 7) // Sun=0
+    val startDayOfWeek = (firstDay.dayOfWeek.value % 7)
     // Design Ref: joyary-upgrade-v5 §2.1 — weekdayColor LocalThemeColors에서 소비 (FR-06)
     val themeWeekdayColor = LocalThemeColors.current.weekdayColor
 
@@ -284,7 +345,6 @@ private fun DayCell(
     val themeColors = LocalThemeColors.current
 
     // Plan SC: FR-08 — 토요일 파랑, 일요일 빨강; Plan SC: SC-05 — 평일 weekdayColor 적용
-    // Design Ref: calendar-daycell-fix §FR-05 — 오늘 날짜: primary 색 (테두리와 동일)
     val dateColor = when {
         isToday -> MaterialTheme.colorScheme.primary
         dayOfWeek == DayOfWeek.SATURDAY -> DateSaturday

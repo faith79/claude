@@ -4,6 +4,8 @@ import com.example.diaryapp.data.repository.AuthRepository
 import com.example.diaryapp.data.repository.AuthRepositoryImpl
 import com.example.diaryapp.data.repository.DiaryRepository
 import com.example.diaryapp.data.repository.DiaryRepositoryImpl
+import com.example.diaryapp.data.repository.MemoRepository
+import com.example.diaryapp.data.repository.MemoRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -21,4 +23,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDiaryRepository(impl: DiaryRepositoryImpl): DiaryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMemoRepository(impl: MemoRepositoryImpl): MemoRepository
 }

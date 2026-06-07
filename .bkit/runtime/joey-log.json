@@ -1,0 +1,13 @@
+{
+  "feature": "diary-tab-memo",
+  "threshold": 100,
+  "startedAt": "2026-06-07T10:00:00.000Z",
+  "decisions": [
+    { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
+    { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
+    { "checkpoint": 3, "decision": "option-c", "reason": "pragmatic-default" }
+  ],
+  "iterations": [],
+  "finalMatchRate": null,
+  "status": "running"
+}
