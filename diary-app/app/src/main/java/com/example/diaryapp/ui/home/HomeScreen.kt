@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,7 +68,8 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    // Design Ref: tab-nav-memo-back-fix — rememberSaveable로 탭 상태 보존 (NavBackStack 이동 후 복귀 시 리셋 방지)
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     val BASE_YEAR = 2000
     val TOTAL_PAGES = (2100 - BASE_YEAR) * 12
@@ -118,9 +120,9 @@ fun HomeScreen(
                 }
             )
         },
-        // Design Ref: tab-memo-fullscreen — 라벨 제거, 높이 56dp로 압축
+        // Design Ref: tab-nav-memo-back-fix — 64dp: 라벨 없이 터치하기 편한 적정 높이
         bottomBar = {
-            NavigationBar(modifier = Modifier.height(56.dp)) {
+            NavigationBar(modifier = Modifier.height(64.dp)) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick  = { selectedTab = 0 },
