@@ -120,9 +120,9 @@ fun HomeScreen(
                 }
             )
         },
-        // Design Ref: tab-nav-memo-back-fix — 64dp: 라벨 없이 터치하기 편한 적정 높이
+        // Design Ref: tab-height-3x — 192dp: 64dp × 3배, 터치 영역 최대화
         bottomBar = {
-            NavigationBar(modifier = Modifier.height(64.dp)) {
+            NavigationBar(modifier = Modifier.height(192.dp)) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick  = { selectedTab = 0 },
