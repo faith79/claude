@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,74 +59,46 @@ fun MemoListContent(
     }
 }
 
+// Design Ref: memo-todo-detail §3 — 리스트 카드: 제목만 표시 (FR-01)
 @Composable
 private fun MemoCard(
     memo: MemoEntry,
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
+    val isTodo = memo.type == MemoType.TODO
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.Top
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val isTodo = memo.type == MemoType.TODO
-                    Surface(
-                        color = if (isTodo) MaterialTheme.colorScheme.tertiary
-                                else MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            if (isTodo) "TODO" else "메모",
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isTodo) MaterialTheme.colorScheme.onTertiary
-                                    else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                    if (memo.title.isNotEmpty()) {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            memo.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                if (memo.type == MemoType.TEXT) {
-                    Text(
-                        memo.content.take(80),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
-                    )
-                } else {
-                    val doneCount = memo.todos.count { it.isDone }
-                    Text(
-                        "${memo.todos.size}개 항목 (완료 $doneCount/${memo.todos.size})",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    memo.todos.take(3).forEach { item ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (item.isDone) "☑" else "☐", fontSize = 14.sp)
-                            Spacer(Modifier.width(4.dp))
-                            Text(item.text, style = MaterialTheme.typography.bodySmall, maxLines = 1)
-                        }
-                    }
-                    if (memo.todos.size > 3) {
-                        Text("…외 ${memo.todos.size - 3}개", style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
+            Surface(
+                color = if (isTodo) MaterialTheme.colorScheme.tertiary
+                        else MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    if (isTodo) "TODO" else "메모",
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isTodo) MaterialTheme.colorScheme.onTertiary
+                            else MaterialTheme.colorScheme.onSecondaryContainer
+                )
             }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = memo.title.ifEmpty {
+                    if (isTodo) "${memo.todos.size}개 항목" else "(내용 없음)"
+                },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                maxLines = 1
+            )
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, "삭제", tint = MaterialTheme.colorScheme.error)
             }
@@ -309,6 +282,152 @@ fun MemoEditorScreen(
         if (isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+        }
+    }
+}
+
+// Design Ref: memo-todo-detail §4 — 상세보기 화면 (FR-02, FR-03, FR-04, FR-05)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MemoDetailScreen(
+    memoId: String,
+    onBack: () -> Unit,
+    onEdit: (String) -> Unit,
+    memoViewModel: MemoViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
+    val userId by authViewModel.currentUserIdFlow.collectAsStateWithLifecycle()
+    val memos by memoViewModel.memos.collectAsStateWithLifecycle()
+    val isLoading by memoViewModel.isLoading.collectAsStateWithLifecycle()
+
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty() && memos.isEmpty()) {
+            memoViewModel.loadMemos(userId)
+        }
+    }
+
+    val memo = memos.find { it.id == memoId }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(if (memo?.type == MemoType.TODO) "TODO 상세" else "메모 상세")
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로")
+                    }
+                },
+                actions = {
+                    if (memo != null) {
+                        TextButton(onClick = { onEdit(memoId) }) {
+                            Text("편집", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        when {
+            isLoading && memo == null -> Box(
+                Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) { CircularProgressIndicator() }
+
+            memo == null -> Box(
+                Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) { Text("메모를 찾을 수 없습니다", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+
+            memo.type == MemoType.TEXT -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        "메모",
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+                if (memo.title.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(memo.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = memo.content.ifEmpty { "(내용 없음)" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (memo.content.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            else -> { // MemoType.TODO
+                val doneCount = memo.todos.count { it.isDone }
+                Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiary,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                "TODO",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onTertiary
+                            )
+                        }
+                        if (memo.title.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(memo.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "완료 $doneCount / ${memo.todos.size}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    HorizontalDivider()
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        items(memo.todos, key = { it.id }) { item ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = item.isDone,
+                                    onCheckedChange = {
+                                        memoViewModel.toggleTodoItem(userId, memoId, item.id)
+                                    }
+                                )
+                                Text(
+                                    text = item.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textDecoration = if (item.isDone) TextDecoration.LineThrough
+                                                     else TextDecoration.None,
+                                    color = if (item.isDone) MaterialTheme.colorScheme.onSurfaceVariant
+                                            else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

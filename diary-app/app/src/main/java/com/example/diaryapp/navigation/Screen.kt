@@ -14,4 +14,8 @@ sealed class Screen(val route: String) {
     object MemoEditor : Screen("memo_editor?id={id}") {
         fun createRoute(id: String = "") = "memo_editor?id=$id"
     }
+    // Design Ref: memo-todo-detail §1 — 상세보기 전용 화면
+    object MemoDetail : Screen("memo_detail/{id}") {
+        fun createRoute(id: String) = "memo_detail/$id"
+    }
 }

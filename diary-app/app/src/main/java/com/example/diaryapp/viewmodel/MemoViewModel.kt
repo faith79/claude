@@ -56,6 +56,24 @@ class MemoViewModel @Inject constructor(
         }
     }
 
+    // Design Ref: memo-todo-detail §2 — optimistic update: 로컬 먼저, Firestore 후, 실패 시 복원
+    fun toggleTodoItem(userId: String, memoId: String, todoId: String) {
+        viewModelScope.launch {
+            val memo = _memos.value.find { it.id == memoId } ?: return@launch
+            val updated = memo.copy(
+                todos = memo.todos.map { if (it.id == todoId) it.copy(isDone = !it.isDone) else it },
+                updatedAt = System.currentTimeMillis()
+            )
+            _memos.value = _memos.value.map { if (it.id == memoId) updated else it }
+            try {
+                memoRepository.saveMemo(userId, updated)
+            } catch (e: Exception) {
+                _memos.value = _memos.value.map { if (it.id == memoId) memo else it }
+                _error.value = "저장 실패: ${e.localizedMessage ?: e.javaClass.simpleName}"
+            }
+        }
+    }
+
     fun deleteMemo(userId: String, memoId: String) {
         viewModelScope.launch {
             try {
