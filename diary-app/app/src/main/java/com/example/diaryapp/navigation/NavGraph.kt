@@ -169,6 +169,7 @@ fun NavGraph(
                 memoId = id,
                 onBack = { navController.popBackStack() },
                 onEdit = { editId -> navController.navigate(Screen.MemoEditor.createRoute(editId)) },
+                onDelete = { navController.popBackStack() },
                 memoViewModel = memoViewModel
             )
         }

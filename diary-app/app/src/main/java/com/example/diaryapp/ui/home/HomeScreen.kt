@@ -209,7 +209,6 @@ fun HomeScreen(
                 // Design Ref: diary-tab-memo §FR-03 — 메모장 탭 콘텐츠
                 MemoListContent(
                     memos = memos,
-                    onDeleteMemo = { memoViewModel.deleteMemo(userId, it) },
                     onEditMemo = { memo -> onEditMemo(memo.id) },
                     modifier = Modifier.padding(padding)
                 )

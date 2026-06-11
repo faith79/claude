@@ -31,7 +31,6 @@ import java.util.UUID
 @Composable
 fun MemoListContent(
     memos: List<MemoEntry>,
-    onDeleteMemo: (String) -> Unit,
     onEditMemo: (MemoEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -51,7 +50,6 @@ fun MemoListContent(
             items(memos, key = { it.id }) { memo ->
                 MemoCard(
                     memo = memo,
-                    onDelete = { onDeleteMemo(memo.id) },
                     onClick = { onEditMemo(memo) }
                 )
             }
@@ -59,11 +57,10 @@ fun MemoListContent(
     }
 }
 
-// Design Ref: memo-todo-detail §3 — 리스트 카드: 제목만 표시 (FR-01)
+// Design Ref: memo-delete-confirm §FR-01 — 리스트 카드: 삭제 버튼 제거
 @Composable
 private fun MemoCard(
     memo: MemoEntry,
-    onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
     val isTodo = memo.type == MemoType.TODO
@@ -99,9 +96,6 @@ private fun MemoCard(
                 modifier = Modifier.weight(1f),
                 maxLines = 1
             )
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, "삭제", tint = MaterialTheme.colorScheme.error)
-            }
         }
     }
 }
@@ -287,19 +281,22 @@ fun MemoEditorScreen(
     }
 }
 
-// Design Ref: memo-todo-detail §4 — 상세보기 화면 (FR-02, FR-03, FR-04, FR-05)
+// Design Ref: memo-delete-confirm §FR-02~05 — 상세보기 삭제 버튼 + 확인 다이얼로그
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemoDetailScreen(
     memoId: String,
     onBack: () -> Unit,
     onEdit: (String) -> Unit,
+    onDelete: () -> Unit,
     memoViewModel: MemoViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val userId by authViewModel.currentUserIdFlow.collectAsStateWithLifecycle()
     val memos by memoViewModel.memos.collectAsStateWithLifecycle()
     val isLoading by memoViewModel.isLoading.collectAsStateWithLifecycle()
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId) {
         if (userId.isNotEmpty() && memos.isEmpty()) {
@@ -308,6 +305,23 @@ fun MemoDetailScreen(
     }
 
     val memo = memos.find { it.id == memoId }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("삭제") },
+            text = { Text("정말 삭제하시겠습니까?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    memoViewModel.deleteMemo(userId, memoId)
+                    onDelete()
+                }) { Text("예", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("아니오") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -322,6 +336,9 @@ fun MemoDetailScreen(
                 },
                 actions = {
                     if (memo != null) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Default.Delete, "삭제", tint = MaterialTheme.colorScheme.error)
+                        }
                         TextButton(onClick = { onEdit(memoId) }) {
                             Text("편집", fontWeight = FontWeight.SemiBold)
                         }
