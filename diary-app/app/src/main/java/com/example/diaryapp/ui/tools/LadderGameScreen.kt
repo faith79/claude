@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -119,12 +120,12 @@ fun LadderGameScreen(onBack: () -> Unit) {
         }
     }
 
-    // Design Ref: §F3 — 다시 하기: 사다리 재생성, 설정값 유지, NAMING으로 복귀
+    // Design Ref: §F3 — 다시 하기: 새 사다리, 이름 유지, 바로 REVEALING (게임 가능 상태)
     fun restart() {
         val allItems = buildItems()
         items = allItems.shuffled()
         rungs = generateLadder(allItems.size)
-        // names 유지 (이전 이름 기억, 변경 가능)
+        // names 유지 (이전 이름 그대로, 즉시 게임 가능)
         revealedPaths = emptyMap()
         animatingIndex = null
         animatingPath = emptyList()
@@ -132,7 +133,7 @@ fun LadderGameScreen(onBack: () -> Unit) {
         allAnimPaths = emptyMap()
         lastRevealedIndex = null
         showResultsDialog = false
-        phase = LadderPhase.NAMING
+        phase = LadderPhase.REVEALING
     }
 
     Scaffold(
@@ -182,20 +183,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
                         phase = LadderPhase.NAMING
                     }
                 },
-                // Design Ref: §F1 — 바로 시작: 이름 입력 없이 숫자로 자동 설정
-                onQuickStart = {
-                    if (inputs.size >= 2) {
-                        val allItems = buildItems()
-                        items = allItems.shuffled()
-                        rungs = generateLadder(allItems.size)
-                        names = List(allItems.size) { "${it + 1}" }
-                        revealedPaths = emptyMap()
-                        animatingIndex = null
-                        isAnimatingAll = false
-                        lastRevealedIndex = null
-                        phase = LadderPhase.REVEALING
-                    }
-                },
                 modifier = Modifier.padding(padding)
             )
             else -> LadderGameContent(
@@ -225,6 +212,11 @@ fun LadderGameScreen(onBack: () -> Unit) {
                 },
                 onRevealAll = { startAllReveal() },
                 onRestart = { restart() },
+                // Design Ref: §F2 — NAMING 단계 바로 시작: 숫자 자동 설정 후 REVEALING 진입
+                onQuickStart = {
+                    names = List(items.size) { "${it + 1}" }
+                    phase = LadderPhase.REVEALING
+                },
                 modifier = Modifier.padding(padding)
             )
         }
@@ -287,7 +279,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
                     }
                 }
             },
-            // Design Ref: §F3 — 결과 팝업에 다시 하기 버튼
             dismissButton = {
                 TextButton(onClick = { restart() }) { Text("다시 하기") }
             },
@@ -298,11 +289,12 @@ fun LadderGameScreen(onBack: () -> Unit) {
     }
 }
 
-private fun generateLadder(n: Int, rows: Int = 12): List<Set<Int>> =
+// Design Ref: §F4 — rows=20(기존 12), probability=0.75f(기존 50%) → 더 복잡한 사다리
+private fun generateLadder(n: Int, rows: Int = 20): List<Set<Int>> =
     (0 until rows).map {
         val row = mutableSetOf<Int>()
         (0 until n - 1).forEach { col ->
-            if (col - 1 !in row && Random.nextBoolean()) row.add(col)
+            if (col - 1 !in row && Random.nextFloat() < 0.75f) row.add(col)
         }
         row
     }
@@ -320,7 +312,6 @@ private fun tracePath(startCol: Int, rungs: List<Set<Int>>): List<Int> {
     return path
 }
 
-// Design Ref: §F2 — canvasH 파라미터: 마지막 직진 세그먼트 점을 canvas 바닥까지 이동
 private fun computeDotOffset(
     path: List<Int>, progress: Float, colW: Float, rowH: Float, canvasH: Float = 0f
 ): Offset {
@@ -334,7 +325,6 @@ private fun computeDotOffset(
     val x1 = col * colW + colW / 2f
     val y1 = seg * rowH
     val x2 = next * colW + colW / 2f
-    // 마지막 직진 세그먼트: y2를 canvas 바닥까지 연장
     val y2 = if (canvasH > 0f && seg == numSegs - 1 && col == next) canvasH
              else (seg + 1) * rowH
     return if (col == next) {
@@ -359,7 +349,6 @@ private fun DrawScope.drawLadderPath(
             drawLine(color, Offset(x, y2), Offset(next * colW + colW / 2f, y2), strokeW, cap = StrokeCap.Round)
         }
     }
-    // Design Ref: §F2 — 마지막 세그먼트 끝에서 canvas 바닥까지 연장
     val finalX = path.last() * colW + colW / 2f
     val lastSegEndY = (path.size - 1) * rowH
     if (lastSegEndY < size.height) {
@@ -392,7 +381,6 @@ private fun DrawScope.drawPartialLadderPath(
     val x1 = col * colW + colW / 2f
     val y1 = curSeg * rowH
     val rungY = (curSeg + 1) * rowH
-    // Design Ref: §F2 — 마지막 직진 세그먼트: y2를 size.height까지 연장
     val y2 = if (curSeg == numSegs - 1 && col == next) size.height else rungY
 
     if (frac <= 0.7f || col == next) {
@@ -403,6 +391,7 @@ private fun DrawScope.drawPartialLadderPath(
     }
 }
 
+// Design Ref: §F1 — imePadding + IME 높이 감지 자동 하단 스크롤
 @Composable
 private fun LadderInputContent(
     inputs: List<String>,
@@ -410,19 +399,30 @@ private fun LadderInputContent(
     onAddInput: () -> Unit,
     onRemoveInput: (Int) -> Unit,
     onStart: () -> Unit,
-    onQuickStart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val imeBottom = WindowInsets.ime.getBottom(density)
 
+    // 항목 추가 시 하단 스크롤
     LaunchedEffect(inputs.size) {
         kotlinx.coroutines.delay(50)
         scrollState.animateScrollTo(scrollState.maxValue)
     }
 
+    // 키보드 올라올 때 자동 하단 스크롤
+    LaunchedEffect(imeBottom) {
+        if (imeBottom > 0) {
+            kotlinx.coroutines.delay(100)
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScrollbar(scrollState)
             .verticalScroll(scrollState)
             .padding(16.dp),
@@ -462,21 +462,8 @@ private fun LadderInputContent(
         }
 
         Spacer(Modifier.height(8.dp))
-
-        // Design Ref: §F1 — 바로 시작 + 사다리 만들기 나란히 배치
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-                onClick = onQuickStart,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("바로 시작")
-            }
-            Button(
-                onClick = onStart,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("이름 입력")
-            }
+        Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
+            Text("사다리 만들기")
         }
     }
 }
@@ -498,6 +485,7 @@ private fun LadderGameContent(
     onNameClick: (Int) -> Unit,
     onRevealAll: () -> Unit,
     onRestart: () -> Unit,
+    onQuickStart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val n = items.size
@@ -580,9 +568,19 @@ private fun LadderGameContent(
             }
         }
 
+        // Design Ref: §F2 — NAMING 단계: 바로 시작 버튼 가운데 표시
+        if (isNaming) {
+            Spacer(Modifier.height(6.dp))
+            Button(
+                onClick = onQuickStart,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("바로 시작")
+            }
+        }
+
         if (!isNaming) {
             Spacer(Modifier.height(4.dp))
-            // Design Ref: §F3 — 다시 하기 + 모두 보기 Row로 배치
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = onRestart,
