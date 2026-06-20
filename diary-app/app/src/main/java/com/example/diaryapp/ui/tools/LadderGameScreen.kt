@@ -40,7 +40,6 @@ private val LADDER_PATH_COLORS = listOf(
     Color(0xFFE91E63), Color(0xFF6D4C41), Color(0xFF3949AB), Color(0xFF7CB342)
 )
 
-// Design Ref: §F1 — 세로 스크롤바 시각화 (DrawScope 확장)
 private fun Modifier.verticalScrollbar(state: ScrollState): Modifier =
     this.drawWithContent {
         drawContent()
@@ -61,7 +60,6 @@ private fun Modifier.verticalScrollbar(state: ScrollState): Modifier =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LadderGameScreen(onBack: () -> Unit) {
-    // Design Ref: §F2 — 초기값 "꽝" (빈 칸 없이 바로 사다리 생성 가능)
     var inputs by remember { mutableStateOf(listOf("꽝", "꽝")) }
 
     var phase by remember { mutableStateOf(LadderPhase.INPUT) }
@@ -85,6 +83,8 @@ fun LadderGameScreen(onBack: () -> Unit) {
 
     val isHidden = revealedPaths.isEmpty() && animatingIndex == null && !isAnimatingAll
 
+    fun buildItems() = inputs.map { if (it.isBlank()) "꽝" else it.trim() }
+
     fun startSingleReveal(idx: Int) {
         if (animatingIndex != null || isAnimatingAll) return
         val path = tracePath(idx, rungs)
@@ -93,7 +93,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
         lastRevealedIndex = idx
         animProgress = 0f
         scope.launch {
-            // Design Ref: §F4 — 2배 느리게 (rungs.size * 200ms)
             animate(0f, 1f, animationSpec = tween(durationMillis = rungs.size * 200)) { v, _ ->
                 animProgress = v
             }
@@ -118,6 +117,22 @@ fun LadderGameScreen(onBack: () -> Unit) {
             allAnimPaths = emptyMap()
             showResultsDialog = true
         }
+    }
+
+    // Design Ref: §F3 — 다시 하기: 사다리 재생성, 설정값 유지, NAMING으로 복귀
+    fun restart() {
+        val allItems = buildItems()
+        items = allItems.shuffled()
+        rungs = generateLadder(allItems.size)
+        // names 유지 (이전 이름 기억, 변경 가능)
+        revealedPaths = emptyMap()
+        animatingIndex = null
+        animatingPath = emptyList()
+        isAnimatingAll = false
+        allAnimPaths = emptyMap()
+        lastRevealedIndex = null
+        showResultsDialog = false
+        phase = LadderPhase.NAMING
     }
 
     Scaffold(
@@ -150,14 +165,13 @@ fun LadderGameScreen(onBack: () -> Unit) {
                 onInputChange = { idx, v ->
                     inputs = inputs.toMutableList().also { it[idx] = v }
                 },
-                // Design Ref: §F2 — 항목 추가 시 기본값 "꽝"
                 onAddInput = { if (inputs.size < 10) inputs = inputs + "꽝" },
                 onRemoveInput = { idx ->
                     if (inputs.size > 2) inputs = inputs.toMutableList().also { it.removeAt(idx) }
                 },
                 onStart = {
                     if (inputs.size >= 2) {
-                        val allItems = inputs.map { if (it.isBlank()) "꽝" else it.trim() }
+                        val allItems = buildItems()
                         items = allItems.shuffled()
                         rungs = generateLadder(allItems.size)
                         names = List(allItems.size) { null }
@@ -166,6 +180,20 @@ fun LadderGameScreen(onBack: () -> Unit) {
                         isAnimatingAll = false
                         lastRevealedIndex = null
                         phase = LadderPhase.NAMING
+                    }
+                },
+                // Design Ref: §F1 — 바로 시작: 이름 입력 없이 숫자로 자동 설정
+                onQuickStart = {
+                    if (inputs.size >= 2) {
+                        val allItems = buildItems()
+                        items = allItems.shuffled()
+                        rungs = generateLadder(allItems.size)
+                        names = List(allItems.size) { "${it + 1}" }
+                        revealedPaths = emptyMap()
+                        animatingIndex = null
+                        isAnimatingAll = false
+                        lastRevealedIndex = null
+                        phase = LadderPhase.REVEALING
                     }
                 },
                 modifier = Modifier.padding(padding)
@@ -186,7 +214,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
                 onNameClick = { idx ->
                     if (phase == LadderPhase.NAMING) {
                         dialogIndex = idx
-                        // Design Ref: §F3 — 기본값 "1","2","3"... 바로 저장 가능
                         dialogText = names.getOrNull(idx) ?: "${idx + 1}"
                     } else {
                         if (idx in revealedPaths) {
@@ -197,12 +224,12 @@ fun LadderGameScreen(onBack: () -> Unit) {
                     }
                 },
                 onRevealAll = { startAllReveal() },
+                onRestart = { restart() },
                 modifier = Modifier.padding(padding)
             )
         }
     }
 
-    // Name entry dialog
     dialogIndex?.let { idx ->
         AlertDialog(
             onDismissRequest = { dialogIndex = null },
@@ -260,6 +287,10 @@ fun LadderGameScreen(onBack: () -> Unit) {
                     }
                 }
             },
+            // Design Ref: §F3 — 결과 팝업에 다시 하기 버튼
+            dismissButton = {
+                TextButton(onClick = { restart() }) { Text("다시 하기") }
+            },
             confirmButton = {
                 TextButton(onClick = { showResultsDialog = false }) { Text("닫기") }
             }
@@ -289,7 +320,10 @@ private fun tracePath(startCol: Int, rungs: List<Set<Int>>): List<Int> {
     return path
 }
 
-private fun computeDotOffset(path: List<Int>, progress: Float, colW: Float, rowH: Float): Offset {
+// Design Ref: §F2 — canvasH 파라미터: 마지막 직진 세그먼트 점을 canvas 바닥까지 이동
+private fun computeDotOffset(
+    path: List<Int>, progress: Float, colW: Float, rowH: Float, canvasH: Float = 0f
+): Offset {
     val numSegs = path.size - 1
     if (numSegs <= 0) return Offset(path[0] * colW + colW / 2f, 0f)
     val raw = (progress * numSegs).coerceIn(0f, numSegs.toFloat())
@@ -299,14 +333,16 @@ private fun computeDotOffset(path: List<Int>, progress: Float, colW: Float, rowH
     val next = path.getOrElse(seg + 1) { col }
     val x1 = col * colW + colW / 2f
     val y1 = seg * rowH
-    val y2 = (seg + 1) * rowH
     val x2 = next * colW + colW / 2f
+    // 마지막 직진 세그먼트: y2를 canvas 바닥까지 연장
+    val y2 = if (canvasH > 0f && seg == numSegs - 1 && col == next) canvasH
+             else (seg + 1) * rowH
     return if (col == next) {
         Offset(x1, y1 + (y2 - y1) * frac)
     } else {
         val vf = 0.7f
-        if (frac <= vf) Offset(x1, y1 + (y2 - y1) * (frac / vf))
-        else Offset(x1 + (x2 - x1) * ((frac - vf) / (1f - vf)), y2)
+        if (frac <= vf) Offset(x1, y1 + ((seg + 1) * rowH - y1) * (frac / vf))
+        else Offset(x1 + (x2 - x1) * ((frac - vf) / (1f - vf)), (seg + 1) * rowH)
     }
 }
 
@@ -317,15 +353,20 @@ private fun DrawScope.drawLadderPath(
         val col = path[i]; val next = path[i + 1]
         val x = col * colW + colW / 2f
         val y1 = i * rowH
-        val y2 = ((i + 1) * rowH).coerceAtMost(size.height)
+        val y2 = (i + 1) * rowH
         drawLine(color, Offset(x, y1), Offset(x, y2), strokeW, cap = StrokeCap.Round)
         if (col != next) {
             drawLine(color, Offset(x, y2), Offset(next * colW + colW / 2f, y2), strokeW, cap = StrokeCap.Round)
         }
     }
+    // Design Ref: §F2 — 마지막 세그먼트 끝에서 canvas 바닥까지 연장
+    val finalX = path.last() * colW + colW / 2f
+    val lastSegEndY = (path.size - 1) * rowH
+    if (lastSegEndY < size.height) {
+        drawLine(color, Offset(finalX, lastSegEndY), Offset(finalX, size.height), strokeW, cap = StrokeCap.Round)
+    }
 }
 
-// Design Ref: §F4 — 점 이동 중 지나간 경로 구간만 색상 변경 (프로그레시브 드로잉)
 private fun DrawScope.drawPartialLadderPath(
     path: List<Int>, progress: Float, color: Color, colW: Float, rowH: Float, strokeW: Float
 ) {
@@ -335,33 +376,33 @@ private fun DrawScope.drawPartialLadderPath(
     val curSeg = raw.toInt().coerceIn(0, numSegs - 1)
     val frac = raw - curSeg
 
-    // 완료된 세그먼트 전체 색상 표시
     for (i in 0 until curSeg) {
         val col = path[i]; val next = path[i + 1]
         val x = col * colW + colW / 2f
         val y1 = i * rowH
-        val y2 = ((i + 1) * rowH).coerceAtMost(size.height)
+        val y2 = (i + 1) * rowH
         drawLine(color, Offset(x, y1), Offset(x, y2), strokeW, cap = StrokeCap.Round)
         if (col != next) {
             drawLine(color, Offset(x, y2), Offset(next * colW + colW / 2f, y2), strokeW, cap = StrokeCap.Round)
         }
     }
 
-    // 현재 세그먼트: 점 위치까지만 색상 표시
-    val dotPos = computeDotOffset(path, progress, colW, rowH)
+    val dotPos = computeDotOffset(path, progress, colW, rowH, size.height)
     val col = path[curSeg]; val next = path.getOrElse(curSeg + 1) { col }
     val x1 = col * colW + colW / 2f
-    val y1 = curSeg * rowH; val y2 = (curSeg + 1) * rowH
+    val y1 = curSeg * rowH
+    val rungY = (curSeg + 1) * rowH
+    // Design Ref: §F2 — 마지막 직진 세그먼트: y2를 size.height까지 연장
+    val y2 = if (curSeg == numSegs - 1 && col == next) size.height else rungY
 
     if (frac <= 0.7f || col == next) {
         drawLine(color, Offset(x1, y1), Offset(x1, dotPos.y.coerceIn(y1, y2)), strokeW, cap = StrokeCap.Round)
     } else {
-        drawLine(color, Offset(x1, y1), Offset(x1, y2), strokeW, cap = StrokeCap.Round)
-        drawLine(color, Offset(x1, y2), Offset(dotPos.x, y2), strokeW, cap = StrokeCap.Round)
+        drawLine(color, Offset(x1, y1), Offset(x1, rungY), strokeW, cap = StrokeCap.Round)
+        drawLine(color, Offset(x1, rungY), Offset(dotPos.x, rungY), strokeW, cap = StrokeCap.Round)
     }
 }
 
-// Design Ref: §F1 — INPUT 자동 스크롤 (항목 추가 시 하단으로)
 @Composable
 private fun LadderInputContent(
     inputs: List<String>,
@@ -369,6 +410,7 @@ private fun LadderInputContent(
     onAddInput: () -> Unit,
     onRemoveInput: (Int) -> Unit,
     onStart: () -> Unit,
+    onQuickStart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -381,7 +423,6 @@ private fun LadderInputContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            // Design Ref: §F1 — 스크롤바 표시 (viewport 기준)
             .verticalScrollbar(scrollState)
             .verticalScroll(scrollState)
             .padding(16.dp),
@@ -421,8 +462,21 @@ private fun LadderInputContent(
         }
 
         Spacer(Modifier.height(8.dp))
-        Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
-            Text("사다리 만들기")
+
+        // Design Ref: §F1 — 바로 시작 + 사다리 만들기 나란히 배치
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = onQuickStart,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("바로 시작")
+            }
+            Button(
+                onClick = onStart,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("이름 입력")
+            }
         }
     }
 }
@@ -443,6 +497,7 @@ private fun LadderGameContent(
     animProgress: Float,
     onNameClick: (Int) -> Unit,
     onRevealAll: () -> Unit,
+    onRestart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val n = items.size
@@ -527,12 +582,22 @@ private fun LadderGameContent(
 
         if (!isNaming) {
             Spacer(Modifier.height(4.dp))
-            OutlinedButton(
-                onClick = onRevealAll,
-                enabled = !isAnimating,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("한번에 모두 보기", fontSize = 13.sp)
+            // Design Ref: §F3 — 다시 하기 + 모두 보기 Row로 배치
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onRestart,
+                    enabled = !isAnimating,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("다시 하기", fontSize = 13.sp)
+                }
+                OutlinedButton(
+                    onClick = onRevealAll,
+                    enabled = !isAnimating,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("모두 보기", fontSize = 13.sp)
+                }
             }
         }
 
@@ -627,7 +692,6 @@ private fun LadderCanvas(
                     }
                 }
 
-                // 완료된 경로 색상 표시
                 revealedPaths.forEach { (nameIdx, path) ->
                     drawLadderPath(
                         path, LADDER_PATH_COLORS[nameIdx % LADDER_PATH_COLORS.size],
@@ -635,22 +699,20 @@ private fun LadderCanvas(
                     )
                 }
 
-                // Design Ref: §F4 — 단일 점 이동 + 지나간 경로 색변경
                 if (animatingIndex != null && animatingPath.size >= 2) {
                     val color = LADDER_PATH_COLORS[animatingIndex % LADDER_PATH_COLORS.size]
                     drawPartialLadderPath(animatingPath, animProgress, color, colW, rowH, pathStroke)
-                    val dot = computeDotOffset(animatingPath, animProgress, colW, rowH)
+                    val dot = computeDotOffset(animatingPath, animProgress, colW, rowH, size.height)
                     drawCircle(color, dotR, dot)
                     drawCircle(Color.White, dotR * 0.45f, dot)
                 }
 
-                // Design Ref: §F4 — 전체 점 이동 + 경로 색변경
                 if (isAnimatingAll) {
                     allAnimPaths.forEach { (nameIdx, path) ->
                         if (path.size >= 2) {
                             val color = LADDER_PATH_COLORS[nameIdx % LADDER_PATH_COLORS.size]
                             drawPartialLadderPath(path, animProgress, color, colW, rowH, pathStroke)
-                            val dot = computeDotOffset(path, animProgress, colW, rowH)
+                            val dot = computeDotOffset(path, animProgress, colW, rowH, size.height)
                             drawCircle(color, dotR, dot)
                             drawCircle(Color.White, dotR * 0.45f, dot)
                         }
