@@ -18,4 +18,6 @@ sealed class Screen(val route: String) {
     object MemoDetail : Screen("memo_detail/{id}") {
         fun createRoute(id: String) = "memo_detail/$id"
     }
+    // Design Ref: tools-tab-ladder-game — 도구모음 사다리 게임 화면
+    object LadderGame : Screen("ladder_game")
 }

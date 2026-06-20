@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Settings
@@ -33,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.diaryapp.data.model.DiaryEntry
 import com.example.diaryapp.data.model.MemoEntry
 import com.example.diaryapp.ui.memo.MemoListContent
+import com.example.diaryapp.ui.tools.ToolsContent
 import com.example.diaryapp.ui.theme.DateSaturday
 import com.example.diaryapp.ui.theme.DateSunday
 import com.example.diaryapp.ui.theme.LocalThemeColors
@@ -57,6 +59,7 @@ fun HomeScreen(
     onLogout: () -> Unit,
     onAddMemo: () -> Unit = {},
     onEditMemo: (String) -> Unit = {},
+    onNavigateToLadder: () -> Unit = {},
     diaryViewModel: DiaryViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
     memoViewModel: MemoViewModel = hiltViewModel()
@@ -133,6 +136,12 @@ fun HomeScreen(
                     onClick  = { selectedTab = 1 },
                     icon     = { Icon(Icons.Default.Description, "메모장") }
                 )
+                // Design Ref: tools-tab-ladder-game — 도구모음 탭 (tab 2)
+                NavigationBarItem(
+                    selected = selectedTab == 2,
+                    onClick  = { selectedTab = 2 },
+                    icon     = { Icon(Icons.Default.Build, "도구모음") }
+                )
             }
         },
         floatingActionButton = {
@@ -147,9 +156,10 @@ fun HomeScreen(
                         }
                     }
                 ) { Icon(Icons.Default.Add, "일기 추가") }
-                else -> FloatingActionButton(
+                1 -> FloatingActionButton(
                     onClick = { onAddMemo() }
                 ) { Icon(Icons.Default.Add, "메모 추가") }
+                // Design Ref: tools-tab-ladder-game — tab 2(도구모음)는 FAB 없음
             }
         }
     ) { padding ->
@@ -205,11 +215,18 @@ fun HomeScreen(
                     }
                 }
             }
-            else -> {
+            1 -> {
                 // Design Ref: diary-tab-memo §FR-03 — 메모장 탭 콘텐츠
                 MemoListContent(
                     memos = memos,
                     onEditMemo = { memo -> onEditMemo(memo.id) },
+                    modifier = Modifier.padding(padding)
+                )
+            }
+            else -> {
+                // Design Ref: tools-tab-ladder-game — 도구모음 탭 콘텐츠
+                ToolsContent(
+                    onNavigateToLadder = onNavigateToLadder,
                     modifier = Modifier.padding(padding)
                 )
             }

@@ -17,6 +17,7 @@ import com.example.diaryapp.ui.home.HomeScreen
 import com.example.diaryapp.ui.memo.MemoDetailScreen
 import com.example.diaryapp.ui.memo.MemoEditorScreen
 import com.example.diaryapp.ui.settings.SettingsScreen
+import com.example.diaryapp.ui.tools.LadderGameScreen
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryViewModel
 import com.example.diaryapp.viewmodel.MemoViewModel
@@ -76,6 +77,8 @@ fun NavGraph(
                 onAddMemo  = { navController.navigate(Screen.MemoEditor.createRoute()) },
                 // Design Ref: memo-todo-detail §5 — 클릭 시 상세화면으로 이동
                 onEditMemo = { id -> navController.navigate(Screen.MemoDetail.createRoute(id)) },
+                // Design Ref: tools-tab-ladder-game — 도구모음 탭 사다리 게임 네비게이션
+                onNavigateToLadder = { navController.navigate(Screen.LadderGame.route) },
                 diaryViewModel = diaryViewModel,
                 memoViewModel  = memoViewModel
             )
@@ -155,6 +158,11 @@ fun NavGraph(
                 onBack       = { navController.popBackStack() },
                 memoViewModel = memoViewModel
             )
+        }
+
+        // Design Ref: tools-tab-ladder-game — 사다리 게임 전체화면
+        composable(Screen.LadderGame.route) {
+            LadderGameScreen(onBack = { navController.popBackStack() })
         }
 
         // Design Ref: memo-todo-detail §5 — 메모/TODO 상세 화면
