@@ -289,15 +289,41 @@ fun LadderGameScreen(onBack: () -> Unit) {
     }
 }
 
-// Design Ref: §F4 — rows=20(기존 12), probability=0.75f(기존 50%) → 더 복잡한 사다리
-private fun generateLadder(n: Int, rows: Int = 20): List<Set<Int>> =
-    (0 until rows).map {
-        val row = mutableSetOf<Int>()
-        (0 until n - 1).forEach { col ->
-            if (col - 1 !in row && Random.nextFloat() < 0.75f) row.add(col)
+// Design Ref: §F1 — straight-streak 강제 전환: 2행 연속 직선 시 강제 가로 연결 삽입
+private fun generateLadder(n: Int): List<Set<Int>> {
+    if (n <= 1) return emptyList()
+    val rows = maxOf(n * 6, 28)
+    val result = mutableListOf<Set<Int>>()
+    val straightStreak = IntArray(n) { 0 }
+
+    repeat(rows) {
+        val rowRungs = mutableSetOf<Int>()
+
+        fun canAdd(p: Int) = p in 0 until n - 1 &&
+                p !in rowRungs && p - 1 !in rowRungs && p + 1 !in rowRungs
+
+        // 연속 직선 2행 이상인 컬럼에 강제 가로 연결
+        (0 until n).filter { straightStreak[it] >= 2 }.shuffled().forEach { col ->
+            when {
+                canAdd(col) -> rowRungs.add(col)
+                col > 0 && canAdd(col - 1) -> rowRungs.add(col - 1)
+            }
         }
-        row
+
+        // 나머지 위치 랜덤 밀집 추가
+        (0 until n - 1).shuffled().forEach { col ->
+            if (canAdd(col) && Random.nextFloat() < 0.65f) rowRungs.add(col)
+        }
+
+        result.add(rowRungs)
+
+        for (col in 0 until n) {
+            val turned = col in rowRungs || (col > 0 && col - 1 in rowRungs)
+            straightStreak[col] = if (turned) 0 else straightStreak[col] + 1
+        }
     }
+    return result
+}
 
 private fun tracePath(startCol: Int, rungs: List<Set<Int>>): List<Int> {
     var col = startCol
@@ -616,6 +642,7 @@ private fun LadderGameContent(
 
         Spacer(Modifier.height(8.dp))
 
+        // Design Ref: §F2 — isHidden=true일 때 "?" 표시, 결과 비공개
         Row(modifier = Modifier.fillMaxWidth()) {
             items.forEachIndexed { idx, item ->
                 val nameIdx = itemColorMap[idx]
@@ -623,20 +650,24 @@ private fun LadderGameContent(
                 Surface(
                     modifier = Modifier.weight(1f).padding(horizontal = 2.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = itemColor ?: MaterialTheme.colorScheme.surfaceVariant
+                    color = if (isHidden) MaterialTheme.colorScheme.surfaceVariant
+                            else (itemColor ?: MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Text(
-                        text = item,
+                        text = if (isHidden) "?" else item,
                         modifier = Modifier
                             .padding(vertical = 10.dp, horizontal = 2.dp)
                             .fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         fontSize = fontSize,
-                        color = if (itemColor != null) Color.White
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = when {
+                            isHidden -> MaterialTheme.colorScheme.onSurfaceVariant
+                            itemColor != null -> Color.White
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        fontWeight = if (itemColor != null) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if (!isHidden && itemColor != null) FontWeight.Bold else FontWeight.Normal
                     )
                 }
             }
