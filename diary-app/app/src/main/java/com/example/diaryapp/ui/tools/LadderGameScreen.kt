@@ -3,6 +3,7 @@ package com.example.diaryapp.ui.tools
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,7 +18,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -31,29 +34,43 @@ import kotlinx.coroutines.launch
 
 private enum class LadderPhase { INPUT, NAMING, REVEALING }
 
-// Design Ref: §F4 — 10가지 구분 색상 (최대 10명)
 private val LADDER_PATH_COLORS = listOf(
     Color(0xFFE53935), Color(0xFF1E88E5), Color(0xFF43A047),
     Color(0xFFFB8C00), Color(0xFF8E24AA), Color(0xFF00ACC1),
     Color(0xFFE91E63), Color(0xFF6D4C41), Color(0xFF3949AB), Color(0xFF7CB342)
 )
 
+// Design Ref: §F1 — 세로 스크롤바 시각화 (DrawScope 확장)
+private fun Modifier.verticalScrollbar(state: ScrollState): Modifier =
+    this.drawWithContent {
+        drawContent()
+        val scrollMax = state.maxValue.toFloat()
+        if (scrollMax > 0f) {
+            val viewH = size.height
+            val thumbH = (viewH * viewH / (viewH + scrollMax)).coerceAtLeast(40f)
+            val thumbY = (state.value.toFloat() / scrollMax) * (viewH - thumbH)
+            val bw = 4.dp.toPx()
+            drawRect(
+                color = Color(0xFF9E9E9E).copy(alpha = if (state.isScrollInProgress) 0.9f else 0.5f),
+                topLeft = Offset(size.width - bw - 2.dp.toPx(), thumbY),
+                size = Size(bw, thumbH)
+            )
+        }
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LadderGameScreen(onBack: () -> Unit) {
-    // INPUT state
-    var inputs by remember { mutableStateOf(listOf("", "")) }
+    // Design Ref: §F2 — 초기값 "꽝" (빈 칸 없이 바로 사다리 생성 가능)
+    var inputs by remember { mutableStateOf(listOf("꽝", "꽝")) }
 
-    // GAME state
     var phase by remember { mutableStateOf(LadderPhase.INPUT) }
     var items by remember { mutableStateOf<List<String>>(emptyList()) }
     var rungs by remember { mutableStateOf<List<Set<Int>>>(emptyList()) }
     var names by remember { mutableStateOf<List<String?>>(emptyList()) }
 
-    // Design Ref: §F4 — 다중 결과 유지 (nameIdx → 완료된 경로)
     var revealedPaths by remember { mutableStateOf<Map<Int, List<Int>>>(emptyMap()) }
 
-    // Design Ref: §F2 — 애니메이션 상태
     val scope = rememberCoroutineScope()
     var animProgress by remember { mutableStateOf(0f) }
     var animatingIndex by remember { mutableStateOf<Int?>(null) }
@@ -61,15 +78,11 @@ fun LadderGameScreen(onBack: () -> Unit) {
     var isAnimatingAll by remember { mutableStateOf(false) }
     var allAnimPaths by remember { mutableStateOf<Map<Int, List<Int>>>(emptyMap()) }
     var lastRevealedIndex by remember { mutableStateOf<Int?>(null) }
-
-    // Design Ref: §F5 — 결과 팝업
     var showResultsDialog by remember { mutableStateOf(false) }
 
-    // Name dialog
     var dialogIndex by remember { mutableStateOf<Int?>(null) }
     var dialogText by remember { mutableStateOf("") }
 
-    // Design Ref: §state — 오버레이 조건
     val isHidden = revealedPaths.isEmpty() && animatingIndex == null && !isAnimatingAll
 
     fun startSingleReveal(idx: Int) {
@@ -80,7 +93,8 @@ fun LadderGameScreen(onBack: () -> Unit) {
         lastRevealedIndex = idx
         animProgress = 0f
         scope.launch {
-            animate(0f, 1f, animationSpec = tween(durationMillis = rungs.size * 100)) { v, _ ->
+            // Design Ref: §F4 — 2배 느리게 (rungs.size * 200ms)
+            animate(0f, 1f, animationSpec = tween(durationMillis = rungs.size * 200)) { v, _ ->
                 animProgress = v
             }
             revealedPaths = revealedPaths + (idx to path)
@@ -89,7 +103,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
         }
     }
 
-    // Design Ref: §F5 — 전체 동시 이동 후 결과 팝업
     fun startAllReveal() {
         if (animatingIndex != null || isAnimatingAll) return
         val paths = names.indices.associateWith { tracePath(it, rungs) }
@@ -97,7 +110,7 @@ fun LadderGameScreen(onBack: () -> Unit) {
         isAnimatingAll = true
         animProgress = 0f
         scope.launch {
-            animate(0f, 1f, animationSpec = tween(durationMillis = rungs.size * 100)) { v, _ ->
+            animate(0f, 1f, animationSpec = tween(durationMillis = rungs.size * 200)) { v, _ ->
                 animProgress = v
             }
             revealedPaths = paths
@@ -137,11 +150,11 @@ fun LadderGameScreen(onBack: () -> Unit) {
                 onInputChange = { idx, v ->
                     inputs = inputs.toMutableList().also { it[idx] = v }
                 },
-                onAddInput = { if (inputs.size < 10) inputs = inputs + "" },
+                // Design Ref: §F2 — 항목 추가 시 기본값 "꽝"
+                onAddInput = { if (inputs.size < 10) inputs = inputs + "꽝" },
                 onRemoveInput = { idx ->
                     if (inputs.size > 2) inputs = inputs.toMutableList().also { it.removeAt(idx) }
                 },
-                // Design Ref: §F3 — 빈 항목 → "꽝"
                 onStart = {
                     if (inputs.size >= 2) {
                         val allItems = inputs.map { if (it.isBlank()) "꽝" else it.trim() }
@@ -173,9 +186,9 @@ fun LadderGameScreen(onBack: () -> Unit) {
                 onNameClick = { idx ->
                     if (phase == LadderPhase.NAMING) {
                         dialogIndex = idx
-                        dialogText = names.getOrNull(idx) ?: ""
+                        // Design Ref: §F3 — 기본값 "1","2","3"... 바로 저장 가능
+                        dialogText = names.getOrNull(idx) ?: "${idx + 1}"
                     } else {
-                        // Design Ref: §F4 — 이미 공개된 경우 결과 텍스트만 갱신
                         if (idx in revealedPaths) {
                             lastRevealedIndex = idx
                         } else {
@@ -206,7 +219,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    // Design Ref: §F3 — 이름 미입력 시 "꽝"
                     val name = if (dialogText.isBlank()) "꽝" else dialogText.trim()
                     val newNames = names.toMutableList().also { it[idx] = name }
                     names = newNames
@@ -223,7 +235,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
         )
     }
 
-    // Design Ref: §F5 — 전체 결과 팝업
     if (showResultsDialog) {
         AlertDialog(
             onDismissRequest = { showResultsDialog = false },
@@ -239,11 +250,7 @@ fun LadderGameScreen(onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(14.dp)
-                                    .background(color, CircleShape)
-                            )
+                            Box(modifier = Modifier.size(14.dp).background(color, CircleShape))
                             Text(
                                 text = "${names[idx] ?: "${idx + 1}"} → $result",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -260,7 +267,6 @@ fun LadderGameScreen(onBack: () -> Unit) {
     }
 }
 
-// Design Ref: §generateLadder — 인접 가로줄 방지
 private fun generateLadder(n: Int, rows: Int = 12): List<Set<Int>> =
     (0 until rows).map {
         val row = mutableSetOf<Int>()
@@ -270,7 +276,6 @@ private fun generateLadder(n: Int, rows: Int = 12): List<Set<Int>> =
         row
     }
 
-// Design Ref: §tracePath — path[i] = i번 세그먼트 열 위치
 private fun tracePath(startCol: Int, rungs: List<Set<Int>>): List<Int> {
     var col = startCol
     val path = mutableListOf(col)
@@ -284,7 +289,6 @@ private fun tracePath(startCol: Int, rungs: List<Set<Int>>): List<Int> {
     return path
 }
 
-// Design Ref: §F2 — 점 위치 계산 (vertFrac=0.7 내려가기, 0.3 방향전환)
 private fun computeDotOffset(path: List<Int>, progress: Float, colW: Float, rowH: Float): Offset {
     val numSegs = path.size - 1
     if (numSegs <= 0) return Offset(path[0] * colW + colW / 2f, 0f)
@@ -306,7 +310,6 @@ private fun computeDotOffset(path: List<Int>, progress: Float, colW: Float, rowH
     }
 }
 
-// Design Ref: §F2/F4 — DrawScope 확장: 경로 선 그리기
 private fun DrawScope.drawLadderPath(
     path: List<Int>, color: Color, colW: Float, rowH: Float, strokeW: Float
 ) {
@@ -319,6 +322,42 @@ private fun DrawScope.drawLadderPath(
         if (col != next) {
             drawLine(color, Offset(x, y2), Offset(next * colW + colW / 2f, y2), strokeW, cap = StrokeCap.Round)
         }
+    }
+}
+
+// Design Ref: §F4 — 점 이동 중 지나간 경로 구간만 색상 변경 (프로그레시브 드로잉)
+private fun DrawScope.drawPartialLadderPath(
+    path: List<Int>, progress: Float, color: Color, colW: Float, rowH: Float, strokeW: Float
+) {
+    val numSegs = path.size - 1
+    if (numSegs <= 0) return
+    val raw = (progress * numSegs).coerceIn(0f, numSegs.toFloat())
+    val curSeg = raw.toInt().coerceIn(0, numSegs - 1)
+    val frac = raw - curSeg
+
+    // 완료된 세그먼트 전체 색상 표시
+    for (i in 0 until curSeg) {
+        val col = path[i]; val next = path[i + 1]
+        val x = col * colW + colW / 2f
+        val y1 = i * rowH
+        val y2 = ((i + 1) * rowH).coerceAtMost(size.height)
+        drawLine(color, Offset(x, y1), Offset(x, y2), strokeW, cap = StrokeCap.Round)
+        if (col != next) {
+            drawLine(color, Offset(x, y2), Offset(next * colW + colW / 2f, y2), strokeW, cap = StrokeCap.Round)
+        }
+    }
+
+    // 현재 세그먼트: 점 위치까지만 색상 표시
+    val dotPos = computeDotOffset(path, progress, colW, rowH)
+    val col = path[curSeg]; val next = path.getOrElse(curSeg + 1) { col }
+    val x1 = col * colW + colW / 2f
+    val y1 = curSeg * rowH; val y2 = (curSeg + 1) * rowH
+
+    if (frac <= 0.7f || col == next) {
+        drawLine(color, Offset(x1, y1), Offset(x1, dotPos.y.coerceIn(y1, y2)), strokeW, cap = StrokeCap.Round)
+    } else {
+        drawLine(color, Offset(x1, y1), Offset(x1, y2), strokeW, cap = StrokeCap.Round)
+        drawLine(color, Offset(x1, y2), Offset(dotPos.x, y2), strokeW, cap = StrokeCap.Round)
     }
 }
 
@@ -342,12 +381,14 @@ private fun LadderInputContent(
     Column(
         modifier = modifier
             .fillMaxSize()
+            // Design Ref: §F1 — 스크롤바 표시 (viewport 기준)
+            .verticalScrollbar(scrollState)
             .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            "참가 항목 입력 (2~10개) — 빈 칸은 꽝 처리",
+            "참가 항목 입력 (2~10개)",
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -359,7 +400,6 @@ private fun LadderInputContent(
                     value = value,
                     onValueChange = { onInputChange(idx, it) },
                     label = { Text("항목 ${idx + 1}") },
-                    placeholder = { Text("꽝") },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -409,7 +449,6 @@ private fun LadderGameContent(
     val fontSize = if (n > 6) 10.sp else 12.sp
     val isAnimating = animatingIndex != null || isAnimatingAll
 
-    // Design Ref: §F4 — 하단 항목 색상 매핑
     val itemColorMap = revealedPaths.entries.associate { (nameIdx, path) -> path.last() to nameIdx }
 
     val lastPath = lastRevealedIndex?.let { revealedPaths[it] }
@@ -448,7 +487,6 @@ private fun LadderGameContent(
 
         Spacer(Modifier.height(8.dp))
 
-        // Design Ref: §F4 — 이름 버튼 색상으로 공개 여부 구분
         Row(modifier = Modifier.fillMaxWidth()) {
             names.forEachIndexed { idx, name ->
                 val isFilled = !name.isNullOrBlank()
@@ -487,7 +525,6 @@ private fun LadderGameContent(
             }
         }
 
-        // Design Ref: §F5 — "한번에 모두 보기" (REVEALING 단계에만)
         if (!isNaming) {
             Spacer(Modifier.height(4.dp))
             OutlinedButton(
@@ -516,7 +553,6 @@ private fun LadderGameContent(
 
         Spacer(Modifier.height(8.dp))
 
-        // Design Ref: §F4 — 하단 항목: 각 사람의 색상으로 강조
         Row(modifier = Modifier.fillMaxWidth()) {
             items.forEachIndexed { idx, item ->
                 val nameIdx = itemColorMap[idx]
@@ -547,7 +583,6 @@ private fun LadderGameContent(
     }
 }
 
-// Design Ref: §LadderCanvas — 세로줄 + 가로줄 + 다중 경로 + 이동하는 점
 @Composable
 private fun LadderCanvas(
     n: Int,
@@ -569,20 +604,17 @@ private fun LadderCanvas(
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (n <= 0 || rungs.isEmpty()) return@Canvas
             val colW = size.width / n
-            // Design Ref: §canvas-layout — rowH = height / (rungs.size + 1)
             val rowH = size.height / (rungs.size + 1)
             val stroke = 3.dp.toPx()
             val pathStroke = 5.dp.toPx()
             val dotR = 8.dp.toPx()
 
-            // 세로줄: 항상 표시
             for (col in 0 until n) {
                 val x = col * colW + colW / 2f
                 drawLine(outlineColor, Offset(x, 0f), Offset(x, size.height), stroke, cap = StrokeCap.Round)
             }
 
             if (!isHidden) {
-                // 가로줄
                 rungs.forEachIndexed { row, rowRungs ->
                     val y = (row + 1) * rowH
                     rowRungs.forEach { col ->
@@ -595,7 +627,7 @@ private fun LadderCanvas(
                     }
                 }
 
-                // Design Ref: §F4 — 완료된 경로 모두 표시 (각자 색상)
+                // 완료된 경로 색상 표시
                 revealedPaths.forEach { (nameIdx, path) ->
                     drawLadderPath(
                         path, LADDER_PATH_COLORS[nameIdx % LADDER_PATH_COLORS.size],
@@ -603,20 +635,22 @@ private fun LadderCanvas(
                     )
                 }
 
-                // Design Ref: §F2 — 단일 이동하는 점
+                // Design Ref: §F4 — 단일 점 이동 + 지나간 경로 색변경
                 if (animatingIndex != null && animatingPath.size >= 2) {
-                    val dot = computeDotOffset(animatingPath, animProgress, colW, rowH)
                     val color = LADDER_PATH_COLORS[animatingIndex % LADDER_PATH_COLORS.size]
+                    drawPartialLadderPath(animatingPath, animProgress, color, colW, rowH, pathStroke)
+                    val dot = computeDotOffset(animatingPath, animProgress, colW, rowH)
                     drawCircle(color, dotR, dot)
                     drawCircle(Color.White, dotR * 0.45f, dot)
                 }
 
-                // Design Ref: §F5 — 전체 이동하는 점들
+                // Design Ref: §F4 — 전체 점 이동 + 경로 색변경
                 if (isAnimatingAll) {
                     allAnimPaths.forEach { (nameIdx, path) ->
                         if (path.size >= 2) {
-                            val dot = computeDotOffset(path, animProgress, colW, rowH)
                             val color = LADDER_PATH_COLORS[nameIdx % LADDER_PATH_COLORS.size]
+                            drawPartialLadderPath(path, animProgress, color, colW, rowH, pathStroke)
+                            val dot = computeDotOffset(path, animProgress, colW, rowH)
                             drawCircle(color, dotR, dot)
                             drawCircle(Color.White, dotR * 0.45f, dot)
                         }
@@ -625,7 +659,6 @@ private fun LadderCanvas(
             }
         }
 
-        // 중간 오버레이
         if (isHidden) {
             Box(
                 modifier = Modifier
