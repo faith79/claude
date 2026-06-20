@@ -41,6 +41,13 @@ private val LADDER_PATH_COLORS = listOf(
     Color(0xFFE91E63), Color(0xFF6D4C41), Color(0xFF3949AB), Color(0xFF7CB342)
 )
 
+// Design Ref: §F2 — 동일 텍스트 결과 그룹 색상 팔레트 (파스텔 톤)
+private val LADDER_GROUP_PALETTE = listOf(
+    Color(0xFFEF9A9A), Color(0xFF90CAF9), Color(0xFFA5D6A7),
+    Color(0xFFFFF176), Color(0xFFCE93D8), Color(0xFF80DEEA),
+    Color(0xFFFFAB91), Color(0xFFB0BEC5)
+)
+
 private fun Modifier.verticalScrollbar(state: ScrollState): Modifier =
     this.drawWithContent {
         drawContent()
@@ -212,9 +219,11 @@ fun LadderGameScreen(onBack: () -> Unit) {
                 },
                 onRevealAll = { startAllReveal() },
                 onRestart = { restart() },
-                // Design Ref: §F2 — NAMING 단계 바로 시작: 숫자 자동 설정 후 REVEALING 진입
+                // Design Ref: §F1 — 바로 시작: null/blank 슬롯만 숫자로 채우고 기존 입력 보존
                 onQuickStart = {
-                    names = List(items.size) { "${it + 1}" }
+                    names = names.mapIndexed { idx, name ->
+                        if (name.isNullOrBlank()) "${idx + 1}" else name
+                    }
                     phase = LadderPhase.REVEALING
                 },
                 modifier = Modifier.padding(padding)
@@ -642,16 +651,29 @@ private fun LadderGameContent(
 
         Spacer(Modifier.height(8.dp))
 
-        // Design Ref: §F2 — isHidden=true일 때 "?" 표시, 결과 비공개
+        // Design Ref: §F2 — 동일 텍스트 그룹 색상: 최빈도=surfaceVariant, 나머지=팔레트
+        val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
+        val itemGroupColorMap = remember(items) {
+            val sorted = items.groupBy { it }
+                .entries.sortedByDescending { it.value.size }
+                .map { it.key }
+            sorted.mapIndexed { idx, text ->
+                text to if (idx == 0) null else LADDER_GROUP_PALETTE[(idx - 1) % LADDER_GROUP_PALETTE.size]
+            }.toMap()
+        }
         Row(modifier = Modifier.fillMaxWidth()) {
             items.forEachIndexed { idx, item ->
                 val nameIdx = itemColorMap[idx]
-                val itemColor = nameIdx?.let { LADDER_PATH_COLORS[it % LADDER_PATH_COLORS.size] }
+                val pathColor = nameIdx?.let { LADDER_PATH_COLORS[it % LADDER_PATH_COLORS.size] }
+                val groupColor = if (!isHidden && pathColor == null) itemGroupColorMap[item] else null
                 Surface(
                     modifier = Modifier.weight(1f).padding(horizontal = 2.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = if (isHidden) MaterialTheme.colorScheme.surfaceVariant
-                            else (itemColor ?: MaterialTheme.colorScheme.surfaceVariant)
+                    color = when {
+                        isHidden -> surfaceVariantColor
+                        pathColor != null -> pathColor
+                        else -> groupColor ?: surfaceVariantColor
+                    }
                 ) {
                     Text(
                         text = if (isHidden) "?" else item,
@@ -662,12 +684,12 @@ private fun LadderGameContent(
                         fontSize = fontSize,
                         color = when {
                             isHidden -> MaterialTheme.colorScheme.onSurfaceVariant
-                            itemColor != null -> Color.White
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            pathColor != null -> Color.White
+                            else -> MaterialTheme.colorScheme.onSurface
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        fontWeight = if (!isHidden && itemColor != null) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if (!isHidden && pathColor != null) FontWeight.Bold else FontWeight.Normal
                     )
                 }
             }
