@@ -5,5 +5,8 @@ enum class WeatherTag(val emoji: String, val label: String) {
     PARTLY_CLOUDY("⛅", "구름조금"),
     CLOUDY("☁️", "흐림"),
     RAINY("🌧️", "비"),
-    SNOWY("❄️", "눈")
+    SNOWY("❄️", "눈"),
+    HUMID("💧", "습함"),
+    HOT("🥵", "더움"),
+    COLD("🥶", "추움")
 }

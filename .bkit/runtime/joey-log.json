@@ -1,12 +1,13 @@
 {
-  "feature": "ladder-game-fix",
+  "feature": "diary-emotion-weather-add",
   "threshold": 100,
-  "startedAt": "2026-06-21T03:00:00.000Z",
+  "startedAt": "2026-06-21T00:00:00.000Z",
+  "completedAt": "2026-06-21T00:10:00.000Z",
   "decisions": [
     { "checkpoint": 1, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 2, "decision": "auto-approve", "reason": "joey-mode" },
     { "checkpoint": 3, "decision": "option-c",     "reason": "pragmatic-default" },
-    { "checkpoint": 4, "decision": "auto-approve",  "filesChanged": 1 },
+    { "checkpoint": 4, "decision": "auto-approve",  "filesChanged": 2 },
     { "checkpoint": 5, "decision": "no-fix-needed", "reason": "100%-first-pass" }
   ],
   "iterations": [
@@ -14,10 +15,9 @@
   ],
   "finalMatchRate": 100,
   "status": "completed",
-  "completedAt": "2026-06-21T03:10:00.000Z",
   "apkBuild": {
     "status": "success",
     "apkPath": "app/build/outputs/apk/debug/app-debug.apk",
-    "sizeBytes": 23620934
+    "sizeBytes": 26604545
   }
 }

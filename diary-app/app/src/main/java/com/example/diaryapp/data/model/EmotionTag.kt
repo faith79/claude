@@ -7,5 +7,6 @@ enum class EmotionTag(val emoji: String, val label: String) {
     CALM("😌", "평온"),
     EXCITED("🥰", "설렘"),
     ANXIOUS("😰", "불안"),
-    TIRED("😴", "피곤")
+    TIRED("😴", "피곤"),
+    ANNOYED("😤", "짜증")
 }
