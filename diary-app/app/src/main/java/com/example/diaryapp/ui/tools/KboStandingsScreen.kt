@@ -77,26 +77,39 @@ class KboStandingsViewModel @Inject constructor() : ViewModel() {
                         .timeout(15_000)
                         .get()
 
-                    // Design Ref: kbo-standings §F3 — 팀명 포함 테이블 탐색 (robust)
+                    // Design Ref: kbo-streak-fix §F3 — 팀명 포함 테이블 탐색 + 헤더 기반 컬럼 인덱스
                     val standingsTable = doc.select("table").firstOrNull { t ->
                         val txt = t.text()
                         txt.contains("LG") && (txt.contains("KT") || txt.contains("삼성"))
                     }
 
-                    standingsTable?.select("tbody tr")?.mapNotNull { row ->
-                        val cells = row.select("td")
-                        if (cells.size < 7) return@mapNotNull null
-                        KboTeamStanding(
-                            rank   = cells[0].text().trim(),
-                            team   = cells[1].text().trim(),
-                            games  = cells.getOrNull(2)?.text()?.trim() ?: "",
-                            wins   = cells.getOrNull(3)?.text()?.trim() ?: "",
-                            draws  = cells.getOrNull(4)?.text()?.trim() ?: "",
-                            losses = cells.getOrNull(5)?.text()?.trim() ?: "",
-                            pct    = cells.getOrNull(6)?.text()?.trim() ?: "",
-                            gb     = cells.getOrNull(7)?.text()?.trim() ?: "",
-                            streak = cells.getOrNull(8)?.text()?.trim() ?: "-"
-                        )
+                    standingsTable?.let { table ->
+                        // 헤더에서 "연속" 컬럼 위치 동적 탐지 (KBO 표: 최근10경기=8, 연속=9)
+                        val headerTexts = table
+                            .select("thead tr th, thead tr td")
+                            .map { it.text().trim() }
+                        val streakIdx = headerTexts.indexOfFirst {
+                            it.contains("연속")
+                        }.takeIf { it >= 0 } ?: 9   // 기본값: 인덱스 9
+                        val gbIdx = headerTexts.indexOfFirst {
+                            it.contains("게임차") || it == "GB"
+                        }.takeIf { it >= 0 } ?: 7
+
+                        table.select("tbody tr").mapNotNull { row ->
+                            val cells = row.select("td")
+                            if (cells.size < 7) return@mapNotNull null
+                            KboTeamStanding(
+                                rank   = cells[0].text().trim(),
+                                team   = cells[1].text().trim(),
+                                games  = cells.getOrNull(2)?.text()?.trim() ?: "",
+                                wins   = cells.getOrNull(3)?.text()?.trim() ?: "",
+                                draws  = cells.getOrNull(4)?.text()?.trim() ?: "",
+                                losses = cells.getOrNull(5)?.text()?.trim() ?: "",
+                                pct    = cells.getOrNull(6)?.text()?.trim() ?: "",
+                                gb     = cells.getOrNull(gbIdx)?.text()?.trim() ?: "",
+                                streak = cells.getOrNull(streakIdx)?.text()?.trim() ?: "-"
+                            )
+                        }
                     } ?: emptyList()
                 }
 
