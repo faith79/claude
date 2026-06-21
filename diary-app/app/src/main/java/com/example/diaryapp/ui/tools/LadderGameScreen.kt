@@ -38,7 +38,8 @@ private enum class LadderPhase { INPUT, NAMING, REVEALING }
 private val LADDER_PATH_COLORS = listOf(
     Color(0xFFE53935), Color(0xFF1E88E5), Color(0xFF43A047),
     Color(0xFFFB8C00), Color(0xFF8E24AA), Color(0xFF00ACC1),
-    Color(0xFFE91E63), Color(0xFF6D4C41), Color(0xFF3949AB), Color(0xFF7CB342)
+    Color(0xFFE91E63), Color(0xFF6D4C41), Color(0xFF3949AB), Color(0xFF7CB342),
+    Color(0xFF00897B), Color(0xFFF4511E)
 )
 
 // Design Ref: §F2 — 동일 텍스트 결과 그룹 색상 팔레트 (파스텔 톤)
@@ -173,7 +174,7 @@ fun LadderGameScreen(onBack: () -> Unit) {
                 onInputChange = { idx, v ->
                     inputs = inputs.toMutableList().also { it[idx] = v }
                 },
-                onAddInput = { if (inputs.size < 10) inputs = inputs + "꽝" },
+                onAddInput = { if (inputs.size < 12) inputs = inputs + "꽝" },
                 onRemoveInput = { idx ->
                     if (inputs.size > 2) inputs = inputs.toMutableList().also { it.removeAt(idx) }
                 },
@@ -464,7 +465,7 @@ private fun LadderInputContent(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            "참가 항목 입력 (2~10개)",
+            "참가 항목 입력 (2~12개)",
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -488,7 +489,7 @@ private fun LadderInputContent(
             }
         }
 
-        if (inputs.size < 10) {
+        if (inputs.size < 12) {
             OutlinedButton(onClick = onAddInput, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
