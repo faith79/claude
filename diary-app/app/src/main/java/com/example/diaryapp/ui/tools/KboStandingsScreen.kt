@@ -206,8 +206,8 @@ private fun KboTable(
     val rowBg1        = MaterialTheme.colorScheme.surface
     val rowBg2        = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     val dividerColor  = MaterialTheme.colorScheme.outlineVariant
-    val winColor      = Color(0xFF1E88E5)
-    val lossColor     = Color(0xFFE53935)
+    val winColor      = Color(0xFFE53935)  // 승=빨강
+    val lossColor     = Color(0xFF1E88E5)  // 패=파랑
     val onSurface     = MaterialTheme.colorScheme.onSurface
 
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
