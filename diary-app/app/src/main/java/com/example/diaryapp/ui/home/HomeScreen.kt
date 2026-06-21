@@ -60,6 +60,7 @@ fun HomeScreen(
     onAddMemo: () -> Unit = {},
     onEditMemo: (String) -> Unit = {},
     onNavigateToLadder: () -> Unit = {},
+    onNavigateToKbo: () -> Unit = {},
     diaryViewModel: DiaryViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
     memoViewModel: MemoViewModel = hiltViewModel()
@@ -227,6 +228,7 @@ fun HomeScreen(
                 // Design Ref: tools-tab-ladder-game — 도구모음 탭 콘텐츠
                 ToolsContent(
                     onNavigateToLadder = onNavigateToLadder,
+                    onNavigateToKbo    = onNavigateToKbo,
                     modifier = Modifier.padding(padding)
                 )
             }

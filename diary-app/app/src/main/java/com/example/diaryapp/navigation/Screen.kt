@@ -20,4 +20,6 @@ sealed class Screen(val route: String) {
     }
     // Design Ref: tools-tab-ladder-game — 도구모음 사다리 게임 화면
     object LadderGame : Screen("ladder_game")
+    // Design Ref: kbo-standings — 프로야구 순위 화면
+    object KboStandings : Screen("kbo_standings")
 }

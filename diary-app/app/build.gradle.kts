@@ -74,4 +74,7 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.security.crypto)
+
+    // Design Ref: kbo-standings — KBO 공식 HTML 스크래핑
+    implementation("org.jsoup:jsoup:1.17.2")
 }

@@ -17,6 +17,7 @@ import com.example.diaryapp.ui.home.HomeScreen
 import com.example.diaryapp.ui.memo.MemoDetailScreen
 import com.example.diaryapp.ui.memo.MemoEditorScreen
 import com.example.diaryapp.ui.settings.SettingsScreen
+import com.example.diaryapp.ui.tools.KboStandingsScreen
 import com.example.diaryapp.ui.tools.LadderGameScreen
 import com.example.diaryapp.viewmodel.AuthViewModel
 import com.example.diaryapp.viewmodel.DiaryViewModel
@@ -79,6 +80,8 @@ fun NavGraph(
                 onEditMemo = { id -> navController.navigate(Screen.MemoDetail.createRoute(id)) },
                 // Design Ref: tools-tab-ladder-game — 도구모음 탭 사다리 게임 네비게이션
                 onNavigateToLadder = { navController.navigate(Screen.LadderGame.route) },
+                // Design Ref: kbo-standings — 프로야구 순위 네비게이션
+                onNavigateToKbo    = { navController.navigate(Screen.KboStandings.route) },
                 diaryViewModel = diaryViewModel,
                 memoViewModel  = memoViewModel
             )
@@ -163,6 +166,11 @@ fun NavGraph(
         // Design Ref: tools-tab-ladder-game — 사다리 게임 전체화면
         composable(Screen.LadderGame.route) {
             LadderGameScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Design Ref: kbo-standings — 프로야구 순위 전체화면
+        composable(Screen.KboStandings.route) {
+            KboStandingsScreen(onBack = { navController.popBackStack() })
         }
 
         // Design Ref: memo-todo-detail §5 — 메모/TODO 상세 화면
