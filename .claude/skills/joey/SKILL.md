@@ -1,16 +1,16 @@
 ---
 name: joey
 classification: workflow
-classification-reason: Quality-gated full-auto PDCA pipeline with configurable match-rate threshold and audit trail
+classification-reason: Full-auto PDCA pipeline with fixed 100% match-rate quality gate and audit trail
 deprecation-risk: none
 effort: high
 description: |
-  Full-auto PDCA pipeline with user-defined quality gate. Runs plan→design→do→analyze→report
-  sequentially. Iterates the analyze→fix loop until match rate reaches the target threshold.
+  Full-auto PDCA pipeline with 100% quality gate. Runs plan→design→do→analyze→report
+  sequentially. Iterates the analyze→fix loop until match rate reaches 100%.
   No git push after report.
-  First argument is optional target % (default 100). No user confirmations at any checkpoint.
+  Always targets 100% match rate. No user confirmations at any checkpoint.
   Triggers: /joey, joey, 자동 PDCA, 풀 파이프라인, auto pipeline, quality gate.
-argument-hint: "[target%] <feature-request>"
+argument-hint: "<feature-request>"
 user-invocable: true
 allowed-tools:
   - Read
@@ -24,37 +24,33 @@ allowed-tools:
 imports: []
 next-skill: null
 pdca-phase: null
-task-template: "[Joey/{threshold}%] {feature}"
+task-template: "[Joey/100%] {feature}"
 ---
 
-# Joey — Quality-Gated Full-Auto PDCA Pipeline
+# Joey — Full-Auto PDCA Pipeline (100% Quality Gate)
 
 > Inspired by `/pdca-fast-track` (Daniel's Track). Runs the complete PDCA cycle
 > (plan → design → do → analyze → report) without user confirmation.
 >
-> The key difference: **you set the quality bar**. Provide a target match-rate % as the
-> first argument. The analyze→fix loop repeats automatically until the code meets that bar.
+> **Quality bar is always 100%.** The analyze→fix loop repeats automatically until
+> all items match the design specification.
 
 ---
 
 ## Argument Syntax
 
 ```
-/joey [target%] <feature-request>
+/joey <feature-request>
 ```
 
-| Position | Type | Default | Description |
-|----------|------|---------|-------------|
-| `[target%]` | Integer 1–100 | `100` | Required match rate before report is generated |
-| `<feature-request>` | String | — | Natural-language description of what to build |
-
-**Parsing rule**: If the first token is a pure integer (no letters), treat it as `target%`.
-Everything else is the feature request.
+| Position | Type | Description |
+|----------|------|-------------|
+| `<feature-request>` | String | Natural-language description of what to build |
 
 ```bash
-/joey 95 로그인 화면 추가해줘        # threshold=95, request="로그인 화면 추가해줘"
-/joey 이미지 업로드 기능             # threshold=100 (default), request="이미지 업로드 기능"
-/joey 80 빠른 프로토타입 만들어줘   # threshold=80, accepts lower bar
+/joey 로그인 화면 추가해줘
+/joey 이미지 업로드 기능
+/joey 홈 화면 UI 개선해줘
 ```
 
 ---
@@ -82,7 +78,7 @@ All other checkpoints (CP-1 through CP-5) remain fully automatic.
 | CP-2 Clarifying questions | "[Auto-approve] 합리적 기본값 적용" |
 | CP-3 Architecture selection | "[Auto-select] Option C — Pragmatic Balance" |
 | CP-4 Implementation approval | "[Auto-approve] 구현 범위 확정" |
-| CP-5 Gap review | "[Auto-select] 지금 모두 수정" (if below threshold) |
+| CP-5 Gap review | "[Auto-select] 지금 모두 수정" (if below 100%) |
 | Any other | "[Auto-select] 첫 번째 옵션 선택" |
 
 ---
@@ -92,20 +88,26 @@ All other checkpoints (CP-1 through CP-5) remain fully automatic.
 ### Step 0 — Argument Parsing & Precondition Check
 
 1. **Parse arguments:**
-   - If first token is a pure integer N (e.g., `95`): `threshold = N`, `request = remaining text`
-   - Otherwise: `threshold = 100`, `request = full argument`
-   - Clamp threshold: `threshold = max(1, min(100, threshold))`
+   - `threshold = 100` (고정)
+   - `request = full argument`
 
 2. **Extract feature name** — kebab-case slug from request:
    - "로그인 화면 추가해줘" → `login-screen`
    - "이미지 압축 버그 수정" → `image-compression-fix`
    - "Add push notification support" → `push-notification`
 
-3. **Initialize session log** — write to `.bkit/runtime/joey-log.json`:
+3. **Set date** — 파일명 날짜 접두사 (YYYY-MM-DD 형식):
+   ```powershell
+   $date = Get-Date -Format "yyyy-MM-dd"
+   ```
+   모든 PDCA 문서 파일명은 `{date}_{featureName}.{phase}.md` 형식으로 생성.
+   예: `2026-06-28_login-screen.plan.md`
+
+4. **Initialize session log** — write to `.bkit/runtime/joey-log.json`:
    ```json
    {
      "feature": "<featureName>",
-     "threshold": <N>,
+     "threshold": 100,
      "startedAt": "<ISO timestamp>",
      "decisions": [],
      "iterations": [],
@@ -117,7 +119,7 @@ All other checkpoints (CP-1 through CP-5) remain fully automatic.
 4. **Print banner:**
    ```
    ╔══════════════════════════════════════════════════════════╗
-   ║  Joey Auto-PDCA  |  Quality Gate: {threshold}%          ║
+   ║  Joey Auto-PDCA  |  Quality Gate: 100%                  ║
    ║  Feature: {featureName}                                 ║
    ║  Mode: Full-Auto — no confirmations                     ║
    ╚══════════════════════════════════════════════════════════╝
@@ -239,14 +241,14 @@ Header: "디자인 선택"
    [CP-1 Auto] 요구사항 확인됨 → 계속 진행
    [CP-2 Auto] 명확화 질문 생략 → 합리적 기본값 적용
    ```
-4. Write Plan to `docs/01-plan/features/{featureName}.plan.md`
+4. Write Plan to `docs/01-plan/features/{date}_{featureName}.plan.md`
 5. Generate Context Anchor (WHY/WHO/RISK/SUCCESS/SCOPE) and embed
 6. Append to session log `decisions[]`: `{checkpoint: 1, decision: "auto-approve", reason: "joey-mode"}`
 
 **Progress:**
 ```
-[1/7] PLAN ✅  {featureName}.plan.md
-      Threshold: {threshold}% | Decisions auto-approved: CP-1, CP-2
+[1/7] PLAN ✅  {date}_{featureName}.plan.md
+      Quality Gate: 100% | Decisions auto-approved: CP-1, CP-2
 ```
 
 ---
@@ -259,12 +261,12 @@ Header: "디자인 선택"
    ```
    [CP-3 Auto] Option C — Pragmatic Balance 선택됨
    ```
-4. Write Design to `docs/02-design/features/{featureName}.design.md`
+4. Write Design to `docs/02-design/features/{date}_{featureName}.design.md`
 5. Append to session log: `{checkpoint: 3, decision: "option-c", reason: "pragmatic-default"}`
 
 **Progress:**
 ```
-[2/7] DESIGN ✅  {featureName}.design.md
+[2/7] DESIGN ✅  {date}_{featureName}.design.md
       Architecture: Option C (Pragmatic Balance) | CP-3 auto-selected
 ```
 
@@ -292,7 +294,7 @@ Header: "디자인 선택"
 
 ### Step 4 — ANALYZE Phase (Quality-Gated Iteration Loop)
 
-This is the core quality gate. The loop runs until match rate ≥ `{threshold}` or max iterations reached.
+This is the core quality gate. The loop runs until match rate = 100% or max iterations reached.
 
 #### Iteration Loop
 
@@ -315,14 +317,14 @@ LOOP:
     { iteration, matchRate, gaps: [...], fixedAt: ISO }
   
   Print progress:
-    [Iter {iteration}/{maxIterations}] Match Rate: {matchRate}% (target: {threshold}%)
+    [Iter {iteration}/{maxIterations}] Match Rate: {matchRate}% (target: 100%)
   
-  IF matchRate >= threshold:
-    Print "[Quality Gate PASSED] {matchRate}% ≥ {threshold}% — 기준 충족"
+  IF matchRate >= 100:
+    Print "[Quality Gate PASSED] 100% — 모든 항목 충족"
     BREAK → proceed to Step 5
   
   IF iteration >= maxIterations:
-    Print "[Max Iterations] {maxIterations}회 완료. 현재 {matchRate}% (목표 {threshold}%)"
+    Print "[Max Iterations] {maxIterations}회 완료. 현재 {matchRate}% (목표 100%)"
     Print "⚠️  목표 미달 — 리포트에 미해결 항목 기록 후 진행"
     BREAK → proceed to Step 5 with warning
   
@@ -334,11 +336,11 @@ LOOP:
   CONTINUE LOOP
 ```
 
-**Write final analysis to:** `docs/03-analysis/{featureName}.analysis.md`
+**Write final analysis to:** `docs/03-analysis/{date}_{featureName}.analysis.md`
 
 **Progress:**
 ```
-[4/7] ANALYZE ✅  Match Rate: {matchRate}% (target: {threshold}%)
+[4/7] ANALYZE ✅  Match Rate: {matchRate}% (target: 100%)
       Iterations: {N} | Gaps fixed: {M} | Status: PASSED / WARNING
 ```
 
@@ -357,12 +359,12 @@ LOOP:
      "completedAt": "<ISO timestamp>"
    }
    ```
-5. Write report to `docs/04-report/features/{featureName}.report.md`
+5. Write report to `docs/04-report/features/{date}_{featureName}.report.md`
 6. Update `.bkit/state/pdca-status.json` → phase = "completed"
 
 **Progress:**
 ```
-[5/7] REPORT ✅  {featureName}.report.md
+[5/7] REPORT ✅  {date}_{featureName}.report.md
 ```
 
 ---
@@ -417,10 +419,10 @@ APK 빌드 완료 후 수정된 소스 파일과 PDCA 문서를 자동 커밋·�
 - **APK 파일 (항상 포함 필수)**:
   - `diary-app/app/build/outputs/apk/debug/app-debug.apk`
 - PDCA 문서:
-  - `docs/01-plan/features/{featureName}.plan.md`
-  - `docs/02-design/features/{featureName}.design.md`
-  - `docs/03-analysis/{featureName}.analysis.md`
-  - `docs/04-report/features/{featureName}.report.md`
+  - `docs/01-plan/features/{date}_{featureName}.plan.md`
+  - `docs/02-design/features/{date}_{featureName}.design.md`
+  - `docs/03-analysis/{date}_{featureName}.analysis.md`
+  - `docs/04-report/features/{date}_{featureName}.report.md`
   - `.bkit/runtime/joey-log.json`
   - `.bkit/state/` 변경분
 
@@ -435,10 +437,10 @@ APK 빌드 완료 후 수정된 소스 파일과 PDCA 문서를 자동 커밋·�
 cd "D:\GIT\claude"
 git add <변경된 소스 파일들>
 git add "diary-app/app/build/outputs/apk/debug/app-debug.apk"
-git add "docs/01-plan/features/{featureName}.plan.md"
-git add "docs/02-design/features/{featureName}.design.md"
-git add "docs/03-analysis/{featureName}.analysis.md"
-git add "docs/04-report/features/{featureName}.report.md"
+git add "docs/01-plan/features/{date}_{featureName}.plan.md"
+git add "docs/02-design/features/{date}_{featureName}.design.md"
+git add "docs/03-analysis/{date}_{featureName}.analysis.md"
+git add "docs/04-report/features/{date}_{featureName}.report.md"
 git add ".bkit/runtime/joey-log.json"
 git commit -m "<type>: {featureName} — {한 줄 요약}"
 git push origin main
@@ -467,13 +469,13 @@ git push origin main
 ║  Joey Pipeline Complete!                                        ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  Feature:       {featureName}                                   ║
-║  Target:        {threshold}%   Actual: {finalMatchRate}%        ║
+║  Target:        100%   Actual: {finalMatchRate}%                ║
 ║  Status:        PASSED ✅  /  WARNING ⚠️                        ║
 ║  Iterations:    {N} / {maxIterations}                           ║
 ╠══════════════════════════════════════════════════════════════════╣
-║  Plan:    docs/01-plan/features/{featureName}.plan.md           ║
-║  Design:  docs/02-design/features/{featureName}.design.md      ║
-║  Report:  docs/04-report/features/{featureName}.report.md      ║
+║  Plan:    docs/01-plan/features/{date}_{featureName}.plan.md   ║
+║  Design:  docs/02-design/features/{date}_{featureName}.design.md║
+║  Report:  docs/04-report/features/{date}_{featureName}.report.md║
 ║  Log:     .bkit/runtime/joey-log.json                          ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  APK:     app/build/outputs/apk/debug/app-debug.apk  ✅        ║
@@ -488,7 +490,7 @@ git push origin main
 ```json
 {
   "feature": "login-screen",
-  "threshold": 95,
+  "threshold": 100,
   "startedAt": "2026-05-23T10:00:00.000Z",
   "completedAt": "2026-05-23T10:42:00.000Z",
   "decisions": [
@@ -518,11 +520,10 @@ git push origin main
 
 | Situation | Action |
 |-----------|--------|
-| threshold out of range | Clamp to [1, 100]; log warning |
 | Plan template missing | Use built-in structure; continue |
 | Design template missing | Use built-in structure; continue |
 | Code error introduced by fix | Revert that fix; mark gap as "manual-required"; continue |
-| matchRate < threshold after 5 iterations | Proceed with ⚠️ warning; list unresolved gaps in report |
+| matchRate < 100% after 5 iterations | Proceed with ⚠️ warning; list unresolved gaps in report |
 | File write error | Retry once; if fails, report error and stop |
 | APK build: JAVA_HOME not set | Set `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"` and retry |
 | APK build: Gradle compile error | Print error, record ⚠️ BUILD FAILED in report, pipeline still completes |
@@ -532,36 +533,25 @@ git push origin main
 
 ---
 
-## Quality Gate Reference
+## Quality Gate
 
-| threshold | When to use |
-|-----------|------------|
-| `80` | 빠른 프로토타입 — 대략적 동작 확인 |
-| `90` | 일반 기능 개발 |
-| `95` | 중요 기능 — 결제, 인증 등 |
-| `100` | 기본값 — 완전 검증 (권장) |
+항상 **100%** — 모든 항목이 설계 명세와 일치해야 리포트가 생성됩니다.
 
 ---
 
 ## Examples
 
 ```bash
-# 기본 품질 기준 (100%)
+# 일반 기능
 /joey 조이어리 앱에 다크모드 추가
-
-# 95% 기준 — 중요 기능
-/joey 95 로그인 화면 추가해줘
-
-# 100% 기준 — 모든 항목 충족 필수
-/joey 100 이미지 압축 버그 수정
-
-# 낮은 기준 — 빠른 프로토타입
-/joey 80 간단한 설정 화면 추가
+/joey 로그인 화면 추가해줘
+/joey 이미지 압축 버그 수정
+/joey 간단한 설정 화면 추가
 
 # UI 디자인 모드 — 디자인 피커 자동 실행
-/joey 홈 화면 UI 개선해줘        # → Step 0.5 디자인 피커 실행 (A/B/C/D 선택)
-/joey 95 설정 화면 디자인 세련되게  # → 피커 후 95% 기준으로 진행
-/joey UI 전체 화면 모던하게 바꿔줘  # → 피커 후 전체 적용
+/joey 홈 화면 UI 개선해줘          # → Step 0.5 디자인 피커 실행 (A/B/C/D 선택)
+/joey 설정 화면 디자인 세련되게      # → 피커 후 100% 기준으로 진행
+/joey UI 전체 화면 모던하게 바꿔줘   # → 피커 후 전체 적용
 ```
 
 ## UI Design Mode — 빠른 참조
